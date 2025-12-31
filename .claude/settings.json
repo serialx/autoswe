@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv sync:*)",
+      "Bash(uv run autoswe:*)",
+      "Bash(uv run python:*)",
+      "Bash(uv run pyright:*)",
+      "Bash(uv run ruff:*)"
+    ]
+  }
+}
