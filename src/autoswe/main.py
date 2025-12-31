@@ -6,9 +6,11 @@ import typer
 from asyncer import syncify
 from pydantic import BaseModel, Field
 
+from autoswe import review
 from autoswe.structured import structured_query
 
 app = typer.Typer()
+app.add_typer(review.app, name="review")
 
 
 @app.command()
