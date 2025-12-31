@@ -6,10 +6,11 @@ import typer
 from asyncer import syncify
 from pydantic import BaseModel, Field
 
-from autoswe import refactor, review
+from autoswe import permission, refactor, review
 from autoswe.structured import structured_query
 
 app = typer.Typer()
+app.add_typer(permission.app, name="permission")
 app.add_typer(refactor.app, name="refactor")
 app.add_typer(review.app, name="review")
 
