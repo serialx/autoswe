@@ -1,13 +1,19 @@
 """CLI entry point for autoswe."""
 
-import asyncio
+from functools import partial
 
+import typer
+from asyncer import syncify
 from pydantic import BaseModel, Field
 
 from autoswe.structured import structured_query
 
+app = typer.Typer()
 
-async def _main() -> None:
+
+@app.command()
+@partial(syncify, raise_sync_error=False)
+async def main() -> None:
     """Example usage of structured_query."""
 
     class CompanyInfo(BaseModel):
@@ -31,8 +37,8 @@ async def _main() -> None:
 
 def cli() -> None:
     """CLI entry point."""
-    asyncio.run(_main())
+    app()
 
 
 if __name__ == "__main__":
-    cli()
+    app()

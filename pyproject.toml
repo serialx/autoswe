@@ -9,8 +9,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "asyncer>=0.0.8",
     "claude-agent-sdk>=0.1.18",
     "pydantic>=2.0",
+    "typer>=0.15.0",
 ]
 
 [project.scripts]
