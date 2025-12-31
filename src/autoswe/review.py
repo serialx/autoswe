@@ -26,7 +26,14 @@ async def run_gh_command(*args: str) -> str:
 
 async def get_review_requested_prs(repo: str | None = None) -> list[dict]:
     """Get PRs where the current user is requested as a reviewer."""
-    args = ["pr", "list", "--json", "number,url,title", "--search", "review-requested:@me"]
+    args = [
+        "pr",
+        "list",
+        "--json",
+        "number,url,title",
+        "--search",
+        "review-requested:@me",
+    ]
     if repo:
         args.extend(["--repo", repo])
     output = await run_gh_command(*args)
@@ -135,8 +142,12 @@ async def review(
             print(f"  Status: {reason}, skipping.\n")
         else:
             if dry_run:
-                print(f"  Status: {reason}. Would add '@codex review' comment (dry-run).\n")
-            elif auto or typer.confirm(f"  {reason}. Add '@codex review' comment?", default=True):
+                print(
+                    f"  Status: {reason}. Would add '@codex review' comment (dry-run).\n"
+                )
+            elif auto or typer.confirm(
+                f"  {reason}. Add '@codex review' comment?", default=True
+            ):
                 await add_pr_comment(pr_number, "@codex review", repo)
                 print("  Status: Added '@codex review' comment.\n")
             else:
