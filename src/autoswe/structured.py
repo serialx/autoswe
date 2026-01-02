@@ -8,8 +8,10 @@ structured outputs with the Claude Agent SDK.
 import dataclasses
 from typing import TypeVar, AsyncIterator, Any
 from pydantic import BaseModel
-from claude_agent_sdk import query
+from claude_agent_sdk import ClaudeSDKClient
 from claude_agent_sdk.types import ClaudeAgentOptions, ResultMessage, Message
+
+from autoswe.config import create_agent_options
 
 
 T = TypeVar("T", bound=BaseModel)
@@ -25,11 +27,8 @@ def _merge_options(
         "schema": schema.model_json_schema(),
     }
 
-    if options is None:
-        return ClaudeAgentOptions(output_format=output_format)
-
-    # Create a new options with output_format set
-    return dataclasses.replace(options, output_format=output_format)
+    base_options = options if options is not None else create_agent_options()
+    return dataclasses.replace(base_options, output_format=output_format)
 
 
 async def structured_query(
@@ -74,9 +73,11 @@ async def structured_query(
     merged_options = _merge_options(options, schema)
     structured_output: dict[str, Any] | None = None
 
-    async for message in query(prompt=prompt, options=merged_options):
-        if isinstance(message, ResultMessage) and message.structured_output:
-            structured_output = message.structured_output
+    async with ClaudeSDKClient(options=merged_options) as client:
+        await client.query(prompt=prompt)
+        async for message in client.receive_response():
+            if isinstance(message, ResultMessage) and message.structured_output:
+                structured_output = message.structured_output
 
     if structured_output is None:
         raise ValueError("No structured output received from query")
@@ -119,8 +120,10 @@ async def structured_query_stream(
     """
     merged_options = _merge_options(options, schema)
 
-    async for message in query(prompt=prompt, options=merged_options):
-        if isinstance(message, ResultMessage) and message.structured_output:
-            yield message, schema.model_validate(message.structured_output)
-        else:
-            yield message, None
+    async with ClaudeSDKClient(options=merged_options) as client:
+        await client.query(prompt=prompt)
+        async for message in client.receive_response():
+            if isinstance(message, ResultMessage) and message.structured_output:
+                yield message, schema.model_validate(message.structured_output)
+            else:
+                yield message, None

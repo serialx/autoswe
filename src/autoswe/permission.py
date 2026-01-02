@@ -1,59 +1,24 @@
 """Permission checking command for autoswe."""
 
 from functools import partial
-from typing import Any
 
 import typer
 from asyncer import syncify
-from claude_agent_sdk import (
-    ClaudeSDKClient,
-    PermissionResult,
-    PermissionResultAllow,
-    PermissionResultDeny,
-    SandboxNetworkConfig,
-    SandboxSettings,
-    ToolPermissionContext,
-    query,
-)
-from claude_agent_sdk.types import ClaudeAgentOptions
+from claude_agent_sdk import ClaudeSDKClient
 from rich.console import Console
 
+from autoswe.config import create_agent_options
 from autoswe.streaming import print_message
 
 app = typer.Typer()
 console = Console()
 
 
-async def can_use_tool(
-    tool: str, input: dict[str, Any], context: ToolPermissionContext
-) -> PermissionResult:
-    print(
-        f"Checking permission for tool: {tool} with input: {input} and context: {context}"
-    )
-    # This is the only way we can allow WebFetch(*)
-    if tool == "WebFetch":
-        return PermissionResultAllow()
-    return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
-
-
 @app.command()
 @partial(syncify, raise_sync_error=False)
 async def check() -> None:
     """Check available tool permissions by executing a test query."""
-    options = ClaudeAgentOptions(
-        permission_mode="acceptEdits",
-        setting_sources=["user", "project", "local"],
-        max_thinking_tokens=128000,
-        # XXX: timeouts on initialization
-        # sandbox=SandboxSettings(
-        #     enabled=True,
-        #     network=SandboxNetworkConfig(
-        #         allowLocalBinding=True,
-        #         allowAllUnixSockets=True,
-        #     ),
-        # ),
-        can_use_tool=can_use_tool,
-    )
+    options = create_agent_options()
 
     prompt = """Your task is to test all available tools to discover permission boundaries.
 
