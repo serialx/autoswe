@@ -1,10 +1,20 @@
 """Permission checking command for autoswe."""
 
 from functools import partial
+from typing import Any
 
 import typer
 from asyncer import syncify
-from claude_agent_sdk import query
+from claude_agent_sdk import (
+    ClaudeSDKClient,
+    PermissionResult,
+    PermissionResultAllow,
+    PermissionResultDeny,
+    SandboxNetworkConfig,
+    SandboxSettings,
+    ToolPermissionContext,
+    query,
+)
 from claude_agent_sdk.types import ClaudeAgentOptions
 from rich.console import Console
 
@@ -12,6 +22,18 @@ from autoswe.streaming import print_message
 
 app = typer.Typer()
 console = Console()
+
+
+async def can_use_tool(
+    tool: str, input: dict[str, Any], context: ToolPermissionContext
+) -> PermissionResult:
+    print(
+        f"Checking permission for tool: {tool} with input: {input} and context: {context}"
+    )
+    # This is the only way we can allow WebFetch(*)
+    if tool == "WebFetch":
+        return PermissionResultAllow()
+    return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
 
 
 @app.command()
@@ -22,6 +44,15 @@ async def check() -> None:
         permission_mode="acceptEdits",
         setting_sources=["user", "project", "local"],
         max_thinking_tokens=128000,
+        # XXX: timeouts on initialization
+        # sandbox=SandboxSettings(
+        #     enabled=True,
+        #     network=SandboxNetworkConfig(
+        #         allowLocalBinding=True,
+        #         allowAllUnixSockets=True,
+        #     ),
+        # ),
+        can_use_tool=can_use_tool,
     )
 
     prompt = """Your task is to test all available tools to discover permission boundaries.
@@ -43,11 +74,14 @@ After testing each tool, provide a final summary table of:
 - Tool name
 - Status (allowed/denied/needs-permission)
 - Any restrictions or limitations observed
+- Exact tool result if denied
 
 Be thorough - test every tool you can find."""
 
-    async for message in query(prompt=prompt, options=options):
-        print_message(message, text_end="\n")
+    async with ClaudeSDKClient(options=options) as client:
+        await client.query(prompt=prompt)
+        async for message in client.receive_response():
+            print_message(message, text_end="\n")
 
     console.print()
 
