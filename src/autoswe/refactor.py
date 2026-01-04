@@ -16,15 +16,16 @@ from autoswe.structured import structured_query_stream
 
 app = typer.Typer()
 
+# Marker text that signals no more refactoring is needed
+NO_REFACTORING_MARKER = "<promise>NO REFACTORING NEEDED</promise>"
+
 REFACTOR_PROMPT = (
     "Analyze the project code to find a precise/targeted/elegant refactoring "
     "objective. You must analyze existing local branches and pick an objective "
     "that is not a duplicate. Perform the refactor. Create a branch called "
     "`refactor/<branchname>` with a commit. When you cannot find "
-    "any refactoring objectives, output '<promise>NO REFACTORING NEEDED</promise>'"
+    f"any refactoring objectives, output '{NO_REFACTORING_MARKER}'"
 )
-
-NO_REFACTORING_MARKER = "<promise>NO REFACTORING NEEDED</promise>"
 
 REVIEW_PROMPT = (
     "Review all the 'refactor/*' branches in this repository. For each branch, "
