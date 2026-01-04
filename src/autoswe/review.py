@@ -8,6 +8,7 @@ import typer
 
 from autoswe import sync_command
 from autoswe.cli import run_command
+from autoswe.console import console
 
 app = typer.Typer()
 
@@ -161,18 +162,18 @@ async def review(
     prs = await get_review_requested_prs(repo)
 
     if not prs:
-        print("No PRs requesting your review.")
+        console.print("No PRs requesting your review.")
         return
 
-    print(f"Found {len(prs)} PR(s) requesting your review:\n")
+    console.print(f"Found {len(prs)} PR(s) requesting your review:\n")
 
     for pr in prs:
         pr_number = pr["number"]
         pr_title = pr["title"]
         pr_url = pr["url"]
 
-        print(f"PR #{pr_number}: {pr_title}")
-        print(f"  URL: {pr_url}")
+        console.print(f"PR #{pr_number}: {pr_title}")
+        console.print(f"  URL: {pr_url}")
 
         details = await get_pr_details(pr_number, repo)
         comments = details["comments"]
@@ -180,16 +181,16 @@ async def review(
 
         should_review, reason = needs_review(comments, commits)
         if not should_review:
-            print(f"  Status: {reason}, skipping.\n")
+            console.print(f"  Status: {reason}, skipping.\n")
         else:
             if dry_run:
-                print(
+                console.print(
                     f"  Status: {reason}. Would add '{CODEX_REVIEW_COMMENT}' comment (dry-run).\n"
                 )
             elif auto or typer.confirm(
                 f"  {reason}. Add '{CODEX_REVIEW_COMMENT}' comment?", default=True
             ):
                 await add_pr_comment(pr_number, CODEX_REVIEW_COMMENT, repo)
-                print(f"  Status: Added '{CODEX_REVIEW_COMMENT}' comment.\n")
+                console.print(f"  Status: Added '{CODEX_REVIEW_COMMENT}' comment.\n")
             else:
-                print("  Status: Skipped.\n")
+                console.print("  Status: Skipped.\n")
