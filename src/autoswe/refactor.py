@@ -1,7 +1,5 @@
 """Autorefactor command - runs Claude Code in a loop to perform refactoring."""
 
-import dataclasses
-
 import typer
 from claude_agent_sdk import ClaudeSDKClient
 from claude_agent_sdk.types import ResultMessage
@@ -12,6 +10,7 @@ from rich.table import Table
 from autoswe import git, options, sync_command
 from autoswe.console import console
 from autoswe.streaming import print_message
+from autoswe.structured import structured_query_stream
 
 app = typer.Typer()
 
@@ -94,31 +93,22 @@ async def review_refactor_branches() -> RefactorReviewResult | None:
     console.print(f"[dim]Found {len(branches)} refactor branches to review.[/dim]")
     console.print()
 
-    # Configure structured output format
-    agent_options = options.claude_code_like_git_review()
-    agent_options = dataclasses.replace(
-        agent_options,
-        output_format={
-            "type": "json_schema",
-            "schema": RefactorReviewResult.model_json_schema(),
-        },
-    )
-
-    structured_output = None
-    async with ClaudeSDKClient(options=agent_options) as client:
-        await client.query(prompt=REVIEW_PROMPT)
-        async for message in client.receive_response():
-            print_message(message)
-            if isinstance(message, ResultMessage) and message.structured_output:
-                structured_output = message.structured_output
+    result: RefactorReviewResult | None = None
+    async for message, structured_result in structured_query_stream(
+        prompt=REVIEW_PROMPT,
+        schema=RefactorReviewResult,
+        options=options.claude_code_like_git_review(),
+    ):
+        print_message(message)
+        if structured_result is not None:
+            result = structured_result
 
     console.print()
 
-    if structured_output is None:
+    if result is None:
         console.print("[red]No structured output received from review.[/red]")
-        return None
 
-    return RefactorReviewResult.model_validate(structured_output)
+    return result
 
 
 def display_review_results(result: RefactorReviewResult) -> None:
