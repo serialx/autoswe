@@ -217,7 +217,7 @@ async def interactive_cherry_pick_review(
 
         choice = typer.prompt(
             "Cherry-pick? [Y]es / [n]o / [d]elete",
-            default="n",
+            default="y",
             show_default=False,
         ).lower()
 
