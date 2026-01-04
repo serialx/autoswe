@@ -5,7 +5,16 @@
       "Bash(uv run autoswe:*)",
       "Bash(uv run python:*)",
       "Bash(uv run pyright:*)",
-      "Bash(uv run ruff:*)"
+      "Bash(uv run ruff:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh search prs:*)",
+      "WebSearch"
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }
