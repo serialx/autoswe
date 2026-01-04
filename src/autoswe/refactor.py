@@ -1,5 +1,7 @@
 """Autorefactor command - runs Claude Code in a loop to perform refactoring."""
 
+from typing import Literal
+
 import typer
 from claude_agent_sdk import ClaudeSDKClient
 from pydantic import BaseModel, Field
@@ -55,8 +57,8 @@ class BranchReview(BaseModel):
     error_description: str | None = Field(
         default=None, description="Description of errors, if any"
     )
-    recommendation: str = Field(
-        description="keep, merge, or drop", pattern="^(keep|merge|drop)$"
+    recommendation: Literal["keep", "merge", "drop"] = Field(
+        description="keep, merge, or drop"
     )
 
 
