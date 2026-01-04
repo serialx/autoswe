@@ -44,7 +44,7 @@ async def refactor_commands(
         command = input.get("command", "")
         # Allow gt commands for creating branches/commits
         if command.startswith(
-            ("gt create", "git branch", "git diff", "git log", "git show")
+            ("gt create", "git branch", "git diff", "git log", "git show", "git add")
         ):
             return PermissionResultAllow()
     return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
