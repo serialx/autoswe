@@ -2,7 +2,6 @@
 
 import typer
 from claude_agent_sdk import ClaudeSDKClient
-from claude_agent_sdk.types import ResultMessage
 from pydantic import BaseModel, Field
 from rich.rule import Rule
 from rich.table import Table
