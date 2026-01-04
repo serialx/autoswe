@@ -1,6 +1,7 @@
 """Shared configuration for Claude Agent SDK."""
 
 import dataclasses
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Any
 
 from claude_agent_sdk import (
@@ -11,43 +12,49 @@ from claude_agent_sdk import (
 )
 from claude_agent_sdk.types import ClaudeAgentOptions
 
-
-async def webfetch_wildcard(
-    tool: str, input: dict[str, Any], context: ToolPermissionContext
-) -> PermissionResult:
-    """Custom tool permission handler that allows WebFetch wildcard."""
-    print(
-        f"Checking permission for tool: {tool} with input: {input} and context: {context}"
-    )
-    if tool == "WebFetch":
-        return PermissionResultAllow()
-    return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
+# Type alias for permission handler functions
+PermissionHandler = Callable[
+    [str, dict[str, Any], ToolPermissionContext], Awaitable[PermissionResult]
+]
 
 
-async def git_commands(
-    tool: str, input: dict[str, Any], context: ToolPermissionContext
-) -> PermissionResult:
-    """Allow git read commands for reviewing branches."""
-    if tool == "Bash":
-        command = input.get("command", "")
-        # Allow read-only git commands
-        if command.startswith(("git branch", "git diff", "git log", "git show")):
+def create_permission_handler(
+    allow_tools: Sequence[str] = (),
+    allow_bash_prefixes: Sequence[str] = (),
+) -> PermissionHandler:
+    """Create a composable permission handler from declarative rules.
+
+    Args:
+        allow_tools: Tool names to allow unconditionally (e.g., ["WebFetch", "Read"]).
+        allow_bash_prefixes: Command prefixes to allow for Bash tool
+            (e.g., ["git branch", "git diff"]).
+
+    Returns:
+        An async permission handler function compatible with can_use_tool.
+
+    Example:
+        >>> handler = create_permission_handler(
+        ...     allow_tools=["WebFetch"],
+        ...     allow_bash_prefixes=["git log", "git diff"],
+        ... )
+    """
+
+    async def handler(
+        tool: str, input: dict[str, Any], context: ToolPermissionContext
+    ) -> PermissionResult:
+        # Check if tool is in the allow list
+        if tool in allow_tools:
             return PermissionResultAllow()
-    return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
 
+        # Check Bash command prefixes
+        if tool == "Bash" and allow_bash_prefixes:
+            command = input.get("command", "")
+            if any(command.startswith(prefix) for prefix in allow_bash_prefixes):
+                return PermissionResultAllow()
 
-async def refactor_commands(
-    tool: str, input: dict[str, Any], context: ToolPermissionContext
-) -> PermissionResult:
-    """Allow commands needed for refactoring workflow."""
-    if tool == "Bash":
-        command = input.get("command", "")
-        # Allow gt commands for creating branches/commits
-        if command.startswith(
-            ("gt create", "git branch", "git diff", "git log", "git show", "git add")
-        ):
-            return PermissionResultAllow()
-    return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
+        return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
+
+    return handler
 
 
 def claude_code_like() -> ClaudeAgentOptions:
@@ -61,14 +68,34 @@ def claude_code_like() -> ClaudeAgentOptions:
 
 def claude_code_like_webfetch_wildcard() -> ClaudeAgentOptions:
     """claude_code_like() with WebFetch wildcard permission."""
-    return dataclasses.replace(claude_code_like(), can_use_tool=webfetch_wildcard)
+    return dataclasses.replace(
+        claude_code_like(),
+        can_use_tool=create_permission_handler(allow_tools=["WebFetch"]),
+    )
 
 
 def claude_code_like_git_review() -> ClaudeAgentOptions:
     """claude_code_like() with git read commands permission for branch review."""
-    return dataclasses.replace(claude_code_like(), can_use_tool=git_commands)
+    return dataclasses.replace(
+        claude_code_like(),
+        can_use_tool=create_permission_handler(
+            allow_bash_prefixes=["git branch", "git diff", "git log", "git show"],
+        ),
+    )
 
 
 def claude_code_like_refactor() -> ClaudeAgentOptions:
     """claude_code_like() with permissions for refactoring workflow (gt, git)."""
-    return dataclasses.replace(claude_code_like(), can_use_tool=refactor_commands)
+    return dataclasses.replace(
+        claude_code_like(),
+        can_use_tool=create_permission_handler(
+            allow_bash_prefixes=[
+                "gt create",
+                "git branch",
+                "git diff",
+                "git log",
+                "git show",
+                "git add",
+            ],
+        ),
+    )
