@@ -1,12 +1,12 @@
 """Review command for requesting codex reviews on PRs."""
 
-import asyncio
 import json
 from typing import TypedDict
 
 import typer
 
 from autoswe import sync_command
+from autoswe.cli import run_command
 
 app = typer.Typer()
 
@@ -41,16 +41,7 @@ class PRDetails(TypedDict):
 
 async def run_gh_command(*args: str) -> str:
     """Run a gh CLI command and return stdout."""
-    proc = await asyncio.create_subprocess_exec(
-        "gh",
-        *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    if proc.returncode != 0:
-        raise RuntimeError(f"gh command failed: {stderr.decode()}")
-    return stdout.decode()
+    return await run_command("gh", *args)
 
 
 async def get_review_requested_prs(repo: str | None = None) -> list[PRInfo]:

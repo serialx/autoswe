@@ -1,20 +1,11 @@
 """Git command utilities for autoswe."""
 
-import asyncio
+from autoswe.cli import run_command
 
 
 async def run_git_command(*args: str) -> str:
     """Run a git CLI command and return stdout."""
-    proc = await asyncio.create_subprocess_exec(
-        "git",
-        *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    if proc.returncode != 0:
-        raise RuntimeError(f"git command failed: {stderr.decode()}")
-    return stdout.decode()
+    return await run_command("git", *args)
 
 
 async def get_current_branch() -> str:
