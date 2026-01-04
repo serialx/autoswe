@@ -179,7 +179,7 @@ async def review_refactor_branches() -> RefactorReviewResult | None:
     async for message, structured_result in structured_query_stream(
         prompt=REVIEW_PROMPT,
         schema=RefactorReviewResult,
-        options=options.claude_code_like_git_review(),
+        agent_options=options.claude_code_like_git_review(),
     ):
         print_message(message)
         if structured_result is not None:

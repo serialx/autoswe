@@ -36,7 +36,7 @@ def _merge_options(
 async def structured_query(
     prompt: str,
     schema: type[T],
-    options: ClaudeAgentOptions | None = None,
+    agent_options: ClaudeAgentOptions | None = None,
 ) -> T:
     """
     Execute a query with structured output using a Pydantic schema.
@@ -47,7 +47,7 @@ async def structured_query(
     Args:
         prompt: The prompt to send to Claude.
         schema: A Pydantic model class defining the expected output structure.
-        options: Optional ClaudeAgentOptions for additional configuration.
+        agent_options: Optional ClaudeAgentOptions for additional configuration.
             Note: output_format will be overwritten by the schema.
 
     Returns:
@@ -73,7 +73,7 @@ async def structured_query(
         ```
     """
     result: T | None = None
-    async for _, structured_result in structured_query_stream(prompt, schema, options):
+    async for _, structured_result in structured_query_stream(prompt, schema, agent_options):
         if structured_result is not None:
             result = structured_result
 
@@ -86,7 +86,7 @@ async def structured_query(
 async def structured_query_stream(
     prompt: str,
     schema: type[T],
-    options: ClaudeAgentOptions | None = None,
+    agent_options: ClaudeAgentOptions | None = None,
 ) -> AsyncIterator[tuple[Message, T | None]]:
     """
     Execute a query with structured output, yielding messages as they arrive.
@@ -97,7 +97,7 @@ async def structured_query_stream(
     Args:
         prompt: The prompt to send to Claude.
         schema: A Pydantic model class defining the expected output structure.
-        options: Optional ClaudeAgentOptions for additional configuration.
+        agent_options: Optional ClaudeAgentOptions for additional configuration.
             Note: output_format will be overwritten by the schema.
 
     Yields:
@@ -116,7 +116,7 @@ async def structured_query_stream(
                 print(f"Progress: {message}")
         ```
     """
-    merged_options = _merge_options(agent_options=options, schema=schema)
+    merged_options = _merge_options(agent_options=agent_options, schema=schema)
 
     async with ClaudeSDKClient(options=merged_options) as client:
         await client.query(prompt=prompt)
