@@ -19,8 +19,14 @@ from claude_agent_sdk.types import (
 
 from autoswe.console import console
 
+# Truncation length constants for preview displays
+DEFAULT_TRUNCATE_LENGTH = 200
+THINKING_PREVIEW_LENGTH = 300
+TOOL_RESULT_PREVIEW_LENGTH = 300
+TOOL_INPUT_PREVIEW_LENGTH = 500
 
-def truncate(text: str, max_length: int = 200) -> str:
+
+def truncate(text: str, max_length: int = DEFAULT_TRUNCATE_LENGTH) -> str:
     """Truncate text to max_length, adding ellipsis if needed."""
     if len(text) <= max_length:
         return text
@@ -31,9 +37,9 @@ def format_tool_input(tool_input: dict) -> str:
     """Format tool input for display."""
     try:
         formatted = json.dumps(tool_input, indent=2, ensure_ascii=False)
-        return truncate(formatted, 500)
+        return truncate(formatted, TOOL_INPUT_PREVIEW_LENGTH)
     except Exception:
-        return truncate(str(tool_input), 500)
+        return truncate(str(tool_input), TOOL_INPUT_PREVIEW_LENGTH)
 
 
 @dataclass
@@ -53,7 +59,7 @@ def _handle_text_block(block: TextBlock, ctx: PrintContext) -> None:
 
 def _handle_thinking_block(block: ThinkingBlock, ctx: PrintContext) -> None:
     """Handle ThinkingBlock printing."""
-    thinking_preview = truncate(block.thinking, 300)
+    thinking_preview = truncate(block.thinking, THINKING_PREVIEW_LENGTH)
     console.print(f"[dim italic]💭 {escape(thinking_preview)}[/dim italic]")
 
 
@@ -76,7 +82,7 @@ def _handle_tool_result_block(block: ToolResultBlock, ctx: PrintContext) -> None
         if isinstance(block.content, str)
         else json.dumps(block.content, ensure_ascii=False)
     )
-    result_text = escape(truncate(content_str, 300))
+    result_text = escape(truncate(content_str, TOOL_RESULT_PREVIEW_LENGTH))
     if block.is_error:
         console.print(f"[red]❌ {result_text}[/red]")
     else:
