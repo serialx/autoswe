@@ -26,18 +26,13 @@ async def list_branches(pattern: str | None = None) -> list[str]:
         pattern: Optional glob pattern to filter branches (e.g., 'refactor/*').
 
     Returns:
-        List of branch names (without leading markers like '* ').
+        List of branch names.
     """
-    args = ["branch", "--list"]
+    args = ["branch", "--list", "--format=%(refname:short)"]
     if pattern:
         args.append(pattern)
     output = await run_git_command(*args)
-    branches = []
-    for line in output.strip().split("\n"):
-        branch = line.strip().lstrip("* ")
-        if branch:
-            branches.append(branch)
-    return branches
+    return [branch for branch in output.strip().split("\n") if branch]
 
 
 async def delete_branch(branch: str, force: bool = False) -> None:
