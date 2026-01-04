@@ -4,6 +4,7 @@ from typing import Literal
 
 import typer
 from claude_agent_sdk import ClaudeSDKClient
+from claude_agent_sdk.types import ClaudeAgentOptions
 from pydantic import BaseModel, Field
 from rich.rule import Rule
 from rich.table import Table
@@ -99,11 +100,19 @@ class RefactorReviewResult(BaseModel):
     )
 
 
-async def run_claude_code(prompt: str) -> str:
-    """Run Claude Code SDK with rich streaming output, return full text."""
+async def run_streaming_query(prompt: str, agent_options: ClaudeAgentOptions) -> str:
+    """Run Claude Code SDK with rich streaming output, return full text.
+
+    Args:
+        prompt: The prompt to send to Claude.
+        agent_options: ClaudeAgentOptions for the query.
+
+    Returns:
+        The combined text output from the streaming response.
+    """
     output: list[str] = []
 
-    async with ClaudeSDKClient(options=options.claude_code_like_refactor()) as client:
+    async with ClaudeSDKClient(options=agent_options) as client:
         await client.query(prompt=prompt)
         async for message in client.receive_response():
             print_message(message, output=output)
@@ -112,20 +121,16 @@ async def run_claude_code(prompt: str) -> str:
     return "".join(output)
 
 
+async def run_claude_code(prompt: str) -> str:
+    """Run Claude Code SDK with refactor permissions, return full text."""
+    return await run_streaming_query(prompt, options.claude_code_like_refactor())
+
+
 async def run_cherry_pick_agent(branch: str, commit_message: str) -> bool:
     """Run Claude Code to cherry-pick a branch. Returns True on success."""
-    output: list[str] = []
     prompt = CHERRY_PICK_PROMPT.format(branch=branch, message=commit_message)
-
-    async with ClaudeSDKClient(
-        options=options.claude_code_like_cherry_pick()
-    ) as client:
-        await client.query(prompt=prompt)
-        async for message in client.receive_response():
-            print_message(message, output=output)
-
-    console.print()
-    return "CHERRY_PICK_SUCCESS" in "".join(output)
+    output = await run_streaming_query(prompt, options.claude_code_like_cherry_pick())
+    return "CHERRY_PICK_SUCCESS" in output
 
 
 async def run_prompt_optimization_agent(
