@@ -90,12 +90,12 @@ def claude_code_like_refactor() -> ClaudeAgentOptions:
         claude_code_like(),
         can_use_tool=create_permission_handler(
             allow_bash_prefixes=[
-                "gt create",
                 "git branch",
                 "git diff",
                 "git log",
                 "git show",
                 "git add",
+                "git commit",
             ],
         ),
     )

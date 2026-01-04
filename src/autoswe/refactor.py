@@ -16,8 +16,8 @@ app = typer.Typer()
 REFACTOR_PROMPT = (
     "Analyze the project code to find a precise/targeted/elegant refactoring "
     "objective. You must analyze existing local branches and pick an objective "
-    "that is not a duplicate. Perform the refactor. Use "
-    "`gt create refactor/<branchname> -m ...` to create a commit. When you cannot find "
+    "that is not a duplicate. Perform the refactor. Create a branch called "
+    "`refactor/<branchname>` with a commit. When you cannot find "
     "any refactoring objectives, output '<promise>NO REFACTORING NEEDED</promise>'"
 )
 
