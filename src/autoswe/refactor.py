@@ -1,6 +1,5 @@
 """Autorefactor command - runs Claude Code in a loop to perform refactoring."""
 
-import asyncio
 import dataclasses
 
 import typer
@@ -11,7 +10,7 @@ from rich.console import Console
 from rich.rule import Rule
 from rich.table import Table
 
-from autoswe import options, sync_command
+from autoswe import git, options, sync_command
 from autoswe.streaming import print_message
 
 app = typer.Typer()
@@ -71,32 +70,6 @@ class RefactorReviewResult(BaseModel):
     )
 
 
-async def get_current_branch() -> str:
-    """Get the current git branch name."""
-    proc = await asyncio.create_subprocess_exec(
-        "git",
-        "rev-parse",
-        "--abbrev-ref",
-        "HEAD",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
-    return stdout.decode().strip()
-
-
-async def checkout_branch(branch: str) -> None:
-    """Checkout the specified git branch."""
-    proc = await asyncio.create_subprocess_exec(
-        "git",
-        "checkout",
-        branch,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    await proc.communicate()
-
-
 async def run_claude_code(prompt: str) -> str:
     """Run Claude Code SDK with rich streaming output, return full text."""
     output: list[str] = []
@@ -110,35 +83,9 @@ async def run_claude_code(prompt: str) -> str:
     return "".join(output)
 
 
-async def get_refactor_branches() -> list[str]:
-    """Get all branches matching 'refactor/*' pattern."""
-    proc = await asyncio.create_subprocess_exec(
-        "git", "branch", "--list", "refactor/*",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, _ = await proc.communicate()
-    branches = []
-    for line in stdout.decode().strip().split("\n"):
-        branch = line.strip().lstrip("* ")
-        if branch:
-            branches.append(branch)
-    return branches
-
-
-async def delete_branch(branch: str) -> None:
-    """Delete a git branch."""
-    proc = await asyncio.create_subprocess_exec(
-        "git", "branch", "-D", branch,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    await proc.communicate()
-
-
 async def review_refactor_branches() -> RefactorReviewResult | None:
     """Review all refactor branches and return structured results."""
-    branches = await get_refactor_branches()
+    branches = await git.list_branches("refactor/*")
     if not branches:
         console.print("[dim]No refactor branches to review.[/dim]")
         return None
@@ -191,8 +138,16 @@ def display_review_results(result: RefactorReviewResult) -> None:
         if branch.has_errors:
             issues.append("errors")
 
-        score_color = "green" if branch.score >= 7 else "yellow" if branch.score >= 4 else "red"
-        action_color = "green" if branch.recommendation == "merge" else "red" if branch.recommendation == "drop" else "yellow"
+        score_color = (
+            "green" if branch.score >= 7 else "yellow" if branch.score >= 4 else "red"
+        )
+        action_color = (
+            "green"
+            if branch.recommendation == "merge"
+            else "red"
+            if branch.recommendation == "drop"
+            else "yellow"
+        )
 
         table.add_row(
             branch.branch_name,
@@ -226,7 +181,7 @@ async def drop_low_scoring_branches(result: RefactorReviewResult) -> None:
     console.print("[bold yellow]Dropping low-scoring branches...[/bold yellow]")
     for branch in result.recommended_drops:
         console.print(f"  Deleting {branch}...")
-        await delete_branch(branch)
+        await git.delete_branch(branch, force=True)
     console.print("[green]Done.[/green]")
 
 
@@ -239,7 +194,7 @@ async def autorefactor(
     ),
 ) -> None:
     """Run Claude Code to find and perform refactoring until none needed."""
-    trunk_branch = await get_current_branch()
+    trunk_branch = await git.get_current_branch()
     if not review_only:
         console.print(f"[dim]Trunk branch: {trunk_branch}[/dim]")
 
@@ -254,16 +209,14 @@ async def autorefactor(
 
         if NO_REFACTORING_MARKER in output:
             console.print()
-            console.print(
-                "[bold green]✨ No more refactoring needed.[/bold green]"
-            )
+            console.print("[bold green]✨ No more refactoring needed.[/bold green]")
             break
 
         # Ensure we're back on the trunk branch for the next iteration
-        current_branch = await get_current_branch()
+        current_branch = await git.get_current_branch()
         if current_branch != trunk_branch:
             console.print(f"[dim]Returning to trunk branch: {trunk_branch}[/dim]")
-            await checkout_branch(trunk_branch)
+            await git.checkout_branch(trunk_branch)
 
         console.print()
         console.print("[yellow]Refactoring performed. Continuing...[/yellow]")

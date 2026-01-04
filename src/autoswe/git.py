@@ -1,0 +1,60 @@
+"""Git command utilities for autoswe."""
+
+import asyncio
+
+
+async def run_git_command(*args: str) -> str:
+    """Run a git CLI command and return stdout."""
+    proc = await asyncio.create_subprocess_exec(
+        "git",
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f"git command failed: {stderr.decode()}")
+    return stdout.decode()
+
+
+async def get_current_branch() -> str:
+    """Get the current git branch name."""
+    output = await run_git_command("rev-parse", "--abbrev-ref", "HEAD")
+    return output.strip()
+
+
+async def checkout_branch(branch: str) -> None:
+    """Checkout the specified git branch."""
+    await run_git_command("checkout", branch)
+
+
+async def list_branches(pattern: str | None = None) -> list[str]:
+    """List git branches, optionally matching a pattern.
+
+    Args:
+        pattern: Optional glob pattern to filter branches (e.g., 'refactor/*').
+
+    Returns:
+        List of branch names (without leading markers like '* ').
+    """
+    args = ["branch", "--list"]
+    if pattern:
+        args.append(pattern)
+    output = await run_git_command(*args)
+    branches = []
+    for line in output.strip().split("\n"):
+        branch = line.strip().lstrip("* ")
+        if branch:
+            branches.append(branch)
+    return branches
+
+
+async def delete_branch(branch: str, force: bool = False) -> None:
+    """Delete a git branch.
+
+    Args:
+        branch: Name of the branch to delete.
+        force: If True, use -D (force delete). Otherwise use -d.
+    """
+    flag = "-D" if force else "-d"
+    await run_git_command("branch", flag, branch)

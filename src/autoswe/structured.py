@@ -27,7 +27,9 @@ def _merge_options(
         "schema": schema.model_json_schema(),
     }
 
-    base_options = agent_options if agent_options is not None else options.claude_code_like()
+    base_options = (
+        agent_options if agent_options is not None else options.claude_code_like()
+    )
     return dataclasses.replace(base_options, output_format=output_format)
 
 
