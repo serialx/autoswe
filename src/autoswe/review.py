@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, TypedDict
+from typing import Any, NamedTuple, TypedDict
 
 import typer
 
@@ -42,6 +42,13 @@ class PRDetails(TypedDict):
 
     comments: list[Comment]
     commits: list[Commit]
+
+
+class ReviewStatus(NamedTuple):
+    """Result of checking whether a PR needs review."""
+
+    should_review: bool
+    reason: str
 
 
 async def run_gh_command(*args: str) -> str:
@@ -120,20 +127,17 @@ def get_latest_commit_time(commits: Sequence[Mapping[str, Any]]) -> str | None:
     return get_max_timestamp(commits, "committedDate")
 
 
-def needs_review(comments: list[Comment], commits: list[Commit]) -> tuple[bool, str]:
-    """Check if PR needs a new CODEX_REVIEW_COMMENT comment.
-
-    Returns (needs_review, reason).
-    """
+def needs_review(comments: list[Comment], commits: list[Commit]) -> ReviewStatus:
+    """Check if PR needs a new CODEX_REVIEW_COMMENT comment."""
     last_review = get_last_codex_review_time(comments)
     if last_review is None:
-        return True, f"No '{CODEX_REVIEW_COMMENT}' comment found"
+        return ReviewStatus(True, f"No '{CODEX_REVIEW_COMMENT}' comment found")
 
     latest_commit = get_latest_commit_time(commits)
     if latest_commit and latest_commit > last_review:
-        return True, "New commits after last review"
+        return ReviewStatus(True, "New commits after last review")
 
-    return False, "Already reviewed, no new commits"
+    return ReviewStatus(False, "Already reviewed, no new commits")
 
 
 @app.callback(invoke_without_command=True)
