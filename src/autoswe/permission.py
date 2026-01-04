@@ -1,13 +1,10 @@
 """Permission checking command for autoswe."""
 
-from functools import partial
-
 import typer
-from asyncer import syncify
 from claude_agent_sdk import ClaudeSDKClient
 from rich.console import Console
 
-from autoswe import options
+from autoswe import options, sync_command
 from autoswe.streaming import print_message
 
 app = typer.Typer()
@@ -15,7 +12,7 @@ console = Console()
 
 
 @app.command()
-@partial(syncify, raise_sync_error=False)
+@sync_command
 async def check() -> None:
     """Check available tool permissions by executing a test query."""
     prompt = """Your task is to test all available tools to discover permission boundaries.

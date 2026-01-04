@@ -1,12 +1,9 @@
 """CLI entry point for autoswe."""
 
-from functools import partial
-
 import typer
-from asyncer import syncify
 from pydantic import BaseModel, Field
 
-from autoswe import permission, refactor, review
+from autoswe import permission, refactor, review, sync_command
 from autoswe.structured import structured_query
 
 app = typer.Typer()
@@ -16,7 +13,7 @@ app.add_typer(review.app, name="review")
 
 
 @app.command()
-@partial(syncify, raise_sync_error=False)
+@sync_command
 async def main() -> None:
     """Example usage of structured_query."""
 

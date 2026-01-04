@@ -2,10 +2,10 @@
 
 import asyncio
 import json
-from functools import partial
 
 import typer
-from asyncer import syncify
+
+from autoswe import sync_command
 
 app = typer.Typer()
 
@@ -95,7 +95,7 @@ def needs_review(comments: list[dict], commits: list[dict]) -> tuple[bool, str]:
 
 
 @app.callback(invoke_without_command=True)
-@partial(syncify, raise_sync_error=False)
+@sync_command
 async def review(
     repo: str | None = typer.Option(
         None,

@@ -2,19 +2,16 @@
 
 import asyncio
 import dataclasses
-from functools import partial
 
 import typer
-from asyncer import syncify
 from claude_agent_sdk import ClaudeSDKClient
+from claude_agent_sdk.types import ResultMessage
 from pydantic import BaseModel, Field
 from rich.console import Console
 from rich.rule import Rule
 from rich.table import Table
 
-from claude_agent_sdk.types import ResultMessage
-
-from autoswe import options
+from autoswe import options, sync_command
 from autoswe.streaming import print_message
 
 app = typer.Typer()
@@ -234,7 +231,7 @@ async def drop_low_scoring_branches(result: RefactorReviewResult) -> None:
 
 
 @app.callback(invoke_without_command=True)
-@partial(syncify, raise_sync_error=False)
+@sync_command
 async def autorefactor(
     max_iterations: int = typer.Option(20, "--max", "-m", help="Maximum iterations"),
     review_only: bool = typer.Option(
