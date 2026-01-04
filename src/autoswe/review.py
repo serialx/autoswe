@@ -10,6 +10,9 @@ from autoswe.cli import run_command
 
 app = typer.Typer()
 
+# The comment text used to trigger codex review
+CODEX_REVIEW_COMMENT = "@codex review"
+
 
 class Commit(TypedDict):
     """Commit information from GitHub API."""
@@ -79,11 +82,11 @@ async def add_pr_comment(pr_number: int, body: str, repo: str | None = None) -> 
 
 
 def get_last_codex_review_time(comments: list[Comment]) -> str | None:
-    """Get the timestamp of the last '@codex review' comment."""
+    """Get the timestamp of the last CODEX_REVIEW_COMMENT comment."""
     timestamps: list[str] = [
         c["createdAt"]
         for c in comments
-        if "@codex review" in c["body"]
+        if CODEX_REVIEW_COMMENT in c["body"]
     ]
     return max(timestamps, default=None)
 
@@ -95,13 +98,13 @@ def get_latest_commit_time(commits: list[Commit]) -> str | None:
 
 
 def needs_review(comments: list[Comment], commits: list[Commit]) -> tuple[bool, str]:
-    """Check if PR needs a new '@codex review' comment.
+    """Check if PR needs a new CODEX_REVIEW_COMMENT comment.
 
     Returns (needs_review, reason).
     """
     last_review = get_last_codex_review_time(comments)
     if last_review is None:
-        return True, "No '@codex review' comment found"
+        return True, f"No '{CODEX_REVIEW_COMMENT}' comment found"
 
     latest_commit = get_latest_commit_time(commits)
     if latest_commit and latest_commit > last_review:
@@ -159,12 +162,12 @@ async def review(
         else:
             if dry_run:
                 print(
-                    f"  Status: {reason}. Would add '@codex review' comment (dry-run).\n"
+                    f"  Status: {reason}. Would add '{CODEX_REVIEW_COMMENT}' comment (dry-run).\n"
                 )
             elif auto or typer.confirm(
-                f"  {reason}. Add '@codex review' comment?", default=True
+                f"  {reason}. Add '{CODEX_REVIEW_COMMENT}' comment?", default=True
             ):
-                await add_pr_comment(pr_number, "@codex review", repo)
-                print("  Status: Added '@codex review' comment.\n")
+                await add_pr_comment(pr_number, CODEX_REVIEW_COMMENT, repo)
+                print(f"  Status: Added '{CODEX_REVIEW_COMMENT}' comment.\n")
             else:
                 print("  Status: Skipped.\n")
