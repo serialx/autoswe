@@ -79,9 +79,7 @@ def print_message(
                         console.print(f"[green]✅ {result_text}[/green]")
 
     elif isinstance(message, SystemMessage):
-        console.print(
-            f"[yellow]⚙️ [{message.subtype}] {truncate(str(message.data), 200)}[/yellow]"
-        )
+        console.print(f"[yellow]⚙️ [{message.subtype}] {str(message.data)}[/yellow]")
 
     elif isinstance(message, ResultMessage):
         if message.result:
