@@ -98,8 +98,12 @@ def claude_code_like_git_review() -> ClaudeAgentOptions:
     )
 
 
-def claude_code_like_refactor() -> ClaudeAgentOptions:
-    """claude_code_like() with permissions for refactoring workflow (gt, git)."""
+def claude_code_like_git_write() -> ClaudeAgentOptions:
+    """claude_code_like() with git read and write commands permission.
+
+    Allows both read (branch, diff, log, show, checkout) and write
+    (add, commit, reset, merge, cherry-pick) git operations.
+    """
     return dataclasses.replace(
         claude_code_like(),
         can_use_tool=create_permission_handler(
@@ -108,11 +112,9 @@ def claude_code_like_refactor() -> ClaudeAgentOptions:
     )
 
 
-def claude_code_like_cherry_pick() -> ClaudeAgentOptions:
-    """claude_code_like() with permissions for cherry-pick workflow."""
-    return dataclasses.replace(
-        claude_code_like(),
-        can_use_tool=create_permission_handler(
-            allow_bash_prefixes=[*GIT_READ_COMMANDS, *GIT_WRITE_COMMANDS],
-        ),
-    )
+# Aliases for backward compatibility and semantic clarity
+claude_code_like_refactor = claude_code_like_git_write
+"""Alias for git write permissions in refactoring workflows."""
+
+claude_code_like_cherry_pick = claude_code_like_git_write
+"""Alias for git write permissions in cherry-pick workflows."""
