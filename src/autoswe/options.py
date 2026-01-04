@@ -24,6 +24,18 @@ async def webfetch_wildcard(
     return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
 
 
+async def git_commands(
+    tool: str, input: dict[str, Any], context: ToolPermissionContext
+) -> PermissionResult:
+    """Allow git read commands for reviewing branches."""
+    if tool == "Bash":
+        command = input.get("command", "")
+        # Allow read-only git commands
+        if command.startswith(("git branch", "git diff", "git log", "git show")):
+            return PermissionResultAllow()
+    return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
+
+
 def claude_code_like() -> ClaudeAgentOptions:
     """Create ClaudeAgentOptions with claude code like configuration."""
     return ClaudeAgentOptions(
@@ -36,3 +48,8 @@ def claude_code_like() -> ClaudeAgentOptions:
 def claude_code_like_webfetch_wildcard() -> ClaudeAgentOptions:
     """claude_code_like() with WebFetch wildcard permission."""
     return dataclasses.replace(claude_code_like(), can_use_tool=webfetch_wildcard)
+
+
+def claude_code_like_git_review() -> ClaudeAgentOptions:
+    """claude_code_like() with git read commands permission for branch review."""
+    return dataclasses.replace(claude_code_like(), can_use_tool=git_commands)
