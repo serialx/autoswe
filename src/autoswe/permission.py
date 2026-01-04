@@ -2,13 +2,12 @@
 
 import typer
 from claude_agent_sdk import ClaudeSDKClient
-from rich.console import Console
 
 from autoswe import options, sync_command
+from autoswe.console import console
 from autoswe.streaming import print_message
 
 app = typer.Typer()
-console = Console()
 
 
 @app.command()

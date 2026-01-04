@@ -12,9 +12,8 @@ from claude_agent_sdk.types import (
     ToolResultBlock,
     ToolUseBlock,
 )
-from rich.console import Console
 
-console = Console()
+from autoswe.console import console
 
 
 def truncate(text: str, max_length: int = 200) -> str:

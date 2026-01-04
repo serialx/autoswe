@@ -6,15 +6,14 @@ import typer
 from claude_agent_sdk import ClaudeSDKClient
 from claude_agent_sdk.types import ResultMessage
 from pydantic import BaseModel, Field
-from rich.console import Console
 from rich.rule import Rule
 from rich.table import Table
 
 from autoswe import git, options, sync_command
+from autoswe.console import console
 from autoswe.streaming import print_message
 
 app = typer.Typer()
-console = Console()
 
 REFACTOR_PROMPT = (
     "Analyze the project code to find a precise/targeted/elegant refactoring "
