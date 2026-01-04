@@ -1,7 +1,8 @@
 """Review command for requesting codex reviews on PRs."""
 
 import json
-from typing import TypedDict
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, TypedDict
 
 import typer
 
@@ -81,20 +82,41 @@ async def add_pr_comment(pr_number: int, body: str, repo: str | None = None) -> 
     await run_gh_command(*args)
 
 
-def get_last_codex_review_time(comments: list[Comment]) -> str | None:
-    """Get the timestamp of the last CODEX_REVIEW_COMMENT comment."""
+def get_max_timestamp(
+    items: Sequence[Mapping[str, Any]],
+    timestamp_key: str,
+    filter_fn: Callable[[Mapping[str, Any]], bool] = lambda _: True,
+) -> str | None:
+    """Extract the maximum timestamp from a list of dicts.
+
+    Args:
+        items: List of dicts to extract timestamps from.
+        timestamp_key: Key to use for extracting the timestamp.
+        filter_fn: Optional filter function to apply to items.
+
+    Returns:
+        The maximum timestamp string, or None if no timestamps found.
+    """
     timestamps: list[str] = [
-        c["createdAt"]
-        for c in comments
-        if CODEX_REVIEW_COMMENT in c["body"]
+        ts
+        for item in items
+        if filter_fn(item) and (ts := item.get(timestamp_key)) is not None
     ]
     return max(timestamps, default=None)
 
 
-def get_latest_commit_time(commits: list[Commit]) -> str | None:
+def get_last_codex_review_time(comments: Sequence[Mapping[str, Any]]) -> str | None:
+    """Get the timestamp of the last CODEX_REVIEW_COMMENT comment."""
+    return get_max_timestamp(
+        comments,
+        "createdAt",
+        filter_fn=lambda c: CODEX_REVIEW_COMMENT in c.get("body", ""),
+    )
+
+
+def get_latest_commit_time(commits: Sequence[Mapping[str, Any]]) -> str | None:
     """Get the timestamp of the latest commit."""
-    timestamps: list[str] = [c["committedDate"] for c in commits]
-    return max(timestamps, default=None)
+    return get_max_timestamp(commits, "committedDate")
 
 
 def needs_review(comments: list[Comment], commits: list[Commit]) -> tuple[bool, str]:
