@@ -8,7 +8,7 @@ from claude_agent_sdk import ClaudeSDKClient
 from rich.console import Console
 from rich.rule import Rule
 
-from autoswe.config import create_agent_options
+from autoswe import options
 from autoswe.streaming import print_message
 
 app = typer.Typer()
@@ -22,9 +22,8 @@ NO_REFACTORING_MARKER = "<promise>NO REFACTORING NEEDED</promise>"
 async def run_claude_code(prompt: str) -> str:
     """Run Claude Code SDK with rich streaming output, return full text."""
     output: list[str] = []
-    options = create_agent_options()
 
-    async with ClaudeSDKClient(options=options) as client:
+    async with ClaudeSDKClient(options=options.claude_code_like()) as client:
         await client.query(prompt=prompt)
         async for message in client.receive_response():
             print_message(message, output=output)

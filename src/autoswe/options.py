@@ -1,5 +1,6 @@
 """Shared configuration for Claude Agent SDK."""
 
+import dataclasses
 from typing import Any
 
 from claude_agent_sdk import (
@@ -11,7 +12,7 @@ from claude_agent_sdk import (
 from claude_agent_sdk.types import ClaudeAgentOptions
 
 
-async def can_use_tool(
+async def webfetch_wildcard(
     tool: str, input: dict[str, Any], context: ToolPermissionContext
 ) -> PermissionResult:
     """Custom tool permission handler that allows WebFetch wildcard."""
@@ -23,11 +24,15 @@ async def can_use_tool(
     return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
 
 
-def create_agent_options() -> ClaudeAgentOptions:
-    """Create ClaudeAgentOptions with standard configuration."""
+def claude_code_like() -> ClaudeAgentOptions:
+    """Create ClaudeAgentOptions with claude code like configuration."""
     return ClaudeAgentOptions(
         permission_mode="acceptEdits",
         setting_sources=["user", "project", "local"],
         max_thinking_tokens=128000,
-        can_use_tool=can_use_tool,
     )
+
+
+def claude_code_like_webfetch_wildcard() -> ClaudeAgentOptions:
+    """claude_code_like() with WebFetch wildcard permission."""
+    return dataclasses.replace(claude_code_like(), can_use_tool=webfetch_wildcard)

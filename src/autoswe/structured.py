@@ -6,19 +6,19 @@ structured outputs with the Claude Agent SDK.
 """
 
 import dataclasses
-from typing import TypeVar, AsyncIterator, Any
-from pydantic import BaseModel
+from typing import Any, AsyncIterator, TypeVar
+
 from claude_agent_sdk import ClaudeSDKClient
-from claude_agent_sdk.types import ClaudeAgentOptions, ResultMessage, Message
+from claude_agent_sdk.types import ClaudeAgentOptions, Message, ResultMessage
+from pydantic import BaseModel
 
-from autoswe.config import create_agent_options
-
+from autoswe import options
 
 T = TypeVar("T", bound=BaseModel)
 
 
 def _merge_options(
-    options: ClaudeAgentOptions | None,
+    agent_options: ClaudeAgentOptions | None,
     schema: type[BaseModel],
 ) -> ClaudeAgentOptions:
     """Merge user options with structured output format."""
@@ -27,7 +27,7 @@ def _merge_options(
         "schema": schema.model_json_schema(),
     }
 
-    base_options = options if options is not None else create_agent_options()
+    base_options = agent_options if agent_options is not None else options.claude_code_like()
     return dataclasses.replace(base_options, output_format=output_format)
 
 
@@ -70,7 +70,7 @@ async def structured_query(
         print(result.name)  # "Anthropic"
         ```
     """
-    merged_options = _merge_options(options, schema)
+    merged_options = _merge_options(agent_options=options, schema=schema)
     structured_output: dict[str, Any] | None = None
 
     async with ClaudeSDKClient(options=merged_options) as client:
@@ -118,7 +118,7 @@ async def structured_query_stream(
                 print(f"Progress: {message}")
         ```
     """
-    merged_options = _merge_options(options, schema)
+    merged_options = _merge_options(agent_options=options, schema=schema)
 
     async with ClaudeSDKClient(options=merged_options) as client:
         await client.query(prompt=prompt)
