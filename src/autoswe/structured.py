@@ -6,7 +6,7 @@ structured outputs with the Claude Agent SDK.
 """
 
 import dataclasses
-from typing import Any, AsyncIterator, TypeVar
+from typing import AsyncIterator, TypeVar
 
 from claude_agent_sdk import ClaudeSDKClient
 from claude_agent_sdk.types import ClaudeAgentOptions, Message, ResultMessage
@@ -72,19 +72,15 @@ async def structured_query(
         print(result.name)  # "Anthropic"
         ```
     """
-    merged_options = _merge_options(agent_options=options, schema=schema)
-    structured_output: dict[str, Any] | None = None
+    result: T | None = None
+    async for _, structured_result in structured_query_stream(prompt, schema, options):
+        if structured_result is not None:
+            result = structured_result
 
-    async with ClaudeSDKClient(options=merged_options) as client:
-        await client.query(prompt=prompt)
-        async for message in client.receive_response():
-            if isinstance(message, ResultMessage) and message.structured_output:
-                structured_output = message.structured_output
-
-    if structured_output is None:
+    if result is None:
         raise ValueError("No structured output received from query")
 
-    return schema.model_validate(structured_output)
+    return result
 
 
 async def structured_query_stream(
