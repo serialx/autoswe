@@ -79,7 +79,13 @@ def claude_code_like_git_review() -> ClaudeAgentOptions:
     return dataclasses.replace(
         claude_code_like(),
         can_use_tool=create_permission_handler(
-            allow_bash_prefixes=["git branch", "git diff", "git log", "git show"],
+            allow_bash_prefixes=[
+                "git branch",
+                "git diff",
+                "git log",
+                "git show",
+                "git checkout",
+            ],
         ),
     )
 
@@ -96,6 +102,7 @@ def claude_code_like_refactor() -> ClaudeAgentOptions:
                 "git show",
                 "git add",
                 "git commit",
+                "git checkout",
             ],
         ),
     )
