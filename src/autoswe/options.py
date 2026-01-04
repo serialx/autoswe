@@ -122,6 +122,7 @@ def claude_code_like_cherry_pick() -> ClaudeAgentOptions:
                 "git merge",
                 "git commit",
                 "git reset",
+                "git cherry-pick",
             ],
         ),
     )
