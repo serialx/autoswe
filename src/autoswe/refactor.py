@@ -104,7 +104,7 @@ async def run_claude_code(prompt: str) -> str:
     """Run Claude Code SDK with rich streaming output, return full text."""
     output: list[str] = []
 
-    async with ClaudeSDKClient(options=options.claude_code_like()) as client:
+    async with ClaudeSDKClient(options=options.claude_code_like_refactor()) as client:
         await client.query(prompt=prompt)
         async for message in client.receive_response():
             print_message(message, output=output)

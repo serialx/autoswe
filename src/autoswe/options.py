@@ -36,6 +36,20 @@ async def git_commands(
     return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
 
 
+async def refactor_commands(
+    tool: str, input: dict[str, Any], context: ToolPermissionContext
+) -> PermissionResult:
+    """Allow commands needed for refactoring workflow."""
+    if tool == "Bash":
+        command = input.get("command", "")
+        # Allow gt commands for creating branches/commits
+        if command.startswith(
+            ("gt create", "git branch", "git diff", "git log", "git show")
+        ):
+            return PermissionResultAllow()
+    return PermissionResultDeny(message="Tool usage denied by can_use_tool policy.")
+
+
 def claude_code_like() -> ClaudeAgentOptions:
     """Create ClaudeAgentOptions with claude code like configuration."""
     return ClaudeAgentOptions(
@@ -53,3 +67,8 @@ def claude_code_like_webfetch_wildcard() -> ClaudeAgentOptions:
 def claude_code_like_git_review() -> ClaudeAgentOptions:
     """claude_code_like() with git read commands permission for branch review."""
     return dataclasses.replace(claude_code_like(), can_use_tool=git_commands)
+
+
+def claude_code_like_refactor() -> ClaudeAgentOptions:
+    """claude_code_like() with permissions for refactoring workflow (gt, git)."""
+    return dataclasses.replace(claude_code_like(), can_use_tool=refactor_commands)
