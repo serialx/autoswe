@@ -59,23 +59,23 @@ async def add_pr_comment(pr_number: int, body: str, repo: str | None = None) -> 
 
 def get_last_codex_review_time(comments: list[dict]) -> str | None:
     """Get the timestamp of the last '@codex review' comment."""
-    last_time = None
-    for comment in comments:
-        if "@codex review" in comment.get("body", ""):
-            created_at = comment.get("createdAt")
-            if created_at and (last_time is None or created_at > last_time):
-                last_time = created_at
-    return last_time
+    timestamps: list[str] = [
+        created_at
+        for c in comments
+        if "@codex review" in c.get("body", "")
+        and (created_at := c.get("createdAt")) is not None
+    ]
+    return max(timestamps, default=None)
 
 
 def get_latest_commit_time(commits: list[dict]) -> str | None:
     """Get the timestamp of the latest commit."""
-    latest_time = None
-    for commit in commits:
-        committed_date = commit.get("committedDate")
-        if committed_date and (latest_time is None or committed_date > latest_time):
-            latest_time = committed_date
-    return latest_time
+    timestamps: list[str] = [
+        committed_date
+        for c in commits
+        if (committed_date := c.get("committedDate")) is not None
+    ]
+    return max(timestamps, default=None)
 
 
 def needs_review(comments: list[dict], commits: list[dict]) -> tuple[bool, str]:
