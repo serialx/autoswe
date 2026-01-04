@@ -1,6 +1,8 @@
 """Streaming message handling for Claude Agent SDK output."""
 
 import json
+from dataclasses import dataclass
+from typing import Any
 
 from rich.markup import escape
 
@@ -34,6 +36,91 @@ def format_tool_input(tool_input: dict) -> str:
         return truncate(str(tool_input), 500)
 
 
+@dataclass
+class PrintContext:
+    """Context passed to block handlers for printing."""
+
+    output: list[str] | None = None
+    text_end: str = ""
+
+
+def _handle_text_block(block: TextBlock, ctx: PrintContext) -> None:
+    """Handle TextBlock printing."""
+    console.print(block.text, end=ctx.text_end)
+    if ctx.output is not None:
+        ctx.output.append(block.text)
+
+
+def _handle_thinking_block(block: ThinkingBlock, ctx: PrintContext) -> None:
+    """Handle ThinkingBlock printing."""
+    thinking_preview = truncate(block.thinking, 300)
+    console.print(f"[dim italic]💭 {escape(thinking_preview)}[/dim italic]")
+
+
+def _handle_tool_use_block(block: ToolUseBlock, ctx: PrintContext) -> None:
+    """Handle ToolUseBlock printing."""
+    console.print(f"[bold cyan]🔧 {block.name}[/bold cyan]", end="")
+    if block.input:
+        input_preview = format_tool_input(block.input)
+        console.print(f" [dim]{escape(input_preview)}[/dim]")
+    else:
+        console.print()
+
+
+def _handle_tool_result_block(block: ToolResultBlock, ctx: PrintContext) -> None:
+    """Handle ToolResultBlock printing."""
+    if not block.content:
+        return
+    content_str = (
+        block.content
+        if isinstance(block.content, str)
+        else json.dumps(block.content, ensure_ascii=False)
+    )
+    result_text = escape(truncate(content_str, 300))
+    if block.is_error:
+        console.print(f"[red]❌ {result_text}[/red]")
+    else:
+        console.print(f"[green]✅ {result_text}[/green]")
+
+
+# Block type to handler dispatch table
+_BLOCK_HANDLERS: dict[type, Any] = {
+    TextBlock: _handle_text_block,
+    ThinkingBlock: _handle_thinking_block,
+    ToolUseBlock: _handle_tool_use_block,
+    ToolResultBlock: _handle_tool_result_block,
+}
+
+
+def _handle_assistant_message(message: AssistantMessage, ctx: PrintContext) -> None:
+    """Handle AssistantMessage by dispatching to block handlers."""
+    for block in message.content:
+        handler = _BLOCK_HANDLERS.get(type(block))
+        if handler:
+            handler(block, ctx)
+
+
+def _handle_system_message(message: SystemMessage, ctx: PrintContext) -> None:
+    """Handle SystemMessage printing."""
+    console.print(f"[yellow]⚙️ [{message.subtype}] {escape(str(message.data))}[/yellow]")
+
+
+def _handle_result_message(message: ResultMessage, ctx: PrintContext) -> None:
+    """Handle ResultMessage printing."""
+    if message.result:
+        console.print(f"\n{message.result}")
+        if ctx.output is not None:
+            ctx.output.append(message.result)
+
+
+# Message type to handler dispatch table
+_MESSAGE_HANDLERS: dict[type, Any] = {
+    AssistantMessage: _handle_assistant_message,
+    SystemMessage: _handle_system_message,
+    ResultMessage: _handle_result_message,
+}
+
+
 def print_message(
     message: Message,
     output: list[str] | None = None,
@@ -46,45 +133,7 @@ def print_message(
         output: Optional list to collect text output (TextBlock and ResultMessage).
         text_end: End string for TextBlock printing (default: "" for streaming).
     """
-    if isinstance(message, AssistantMessage):
-        for block in message.content:
-            if isinstance(block, TextBlock):
-                console.print(block.text, end=text_end)
-                if output is not None:
-                    output.append(block.text)
-
-            elif isinstance(block, ThinkingBlock):
-                thinking_preview = truncate(block.thinking, 300)
-                console.print(f"[dim italic]💭 {escape(thinking_preview)}[/dim italic]")
-
-            elif isinstance(block, ToolUseBlock):
-                console.print(f"[bold cyan]🔧 {block.name}[/bold cyan]", end="")
-                if block.input:
-                    input_preview = format_tool_input(block.input)
-                    console.print(f" [dim]{escape(input_preview)}[/dim]")
-                else:
-                    console.print()
-
-            elif isinstance(block, ToolResultBlock):
-                if block.content:
-                    content_str = (
-                        block.content
-                        if isinstance(block.content, str)
-                        else json.dumps(block.content, ensure_ascii=False)
-                    )
-                    result_text = escape(truncate(content_str, 300))
-                    if block.is_error:
-                        console.print(f"[red]❌ {result_text}[/red]")
-                    else:
-                        console.print(f"[green]✅ {result_text}[/green]")
-
-    elif isinstance(message, SystemMessage):
-        console.print(
-            f"[yellow]⚙️ [{message.subtype}] {escape(str(message.data))}[/yellow]"
-        )
-
-    elif isinstance(message, ResultMessage):
-        if message.result:
-            console.print(f"\n{message.result}")
-            if output is not None:
-                output.append(message.result)
+    ctx = PrintContext(output=output, text_end=text_end)
+    handler = _MESSAGE_HANDLERS.get(type(message))
+    if handler:
+        handler(message, ctx)
