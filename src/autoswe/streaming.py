@@ -2,6 +2,8 @@
 
 import json
 
+from rich.markup import escape
+
 from claude_agent_sdk.types import (
     AssistantMessage,
     Message,
@@ -52,15 +54,16 @@ def print_message(
                     output.append(block.text)
 
             elif isinstance(block, ThinkingBlock):
+                thinking_preview = truncate(block.thinking, 300)
                 console.print(
-                    f"[dim italic]💭 {truncate(block.thinking, 300)}[/dim italic]"
+                    f"[dim italic]💭 {escape(thinking_preview)}[/dim italic]"
                 )
 
             elif isinstance(block, ToolUseBlock):
                 console.print(f"[bold cyan]🔧 {block.name}[/bold cyan]", end="")
                 if block.input:
                     input_preview = format_tool_input(block.input)
-                    console.print(f" [dim]{input_preview}[/dim]")
+                    console.print(f" [dim]{escape(input_preview)}[/dim]")
                 else:
                     console.print()
 
@@ -71,14 +74,14 @@ def print_message(
                         if isinstance(block.content, str)
                         else json.dumps(block.content, ensure_ascii=False)
                     )
-                    result_text = truncate(content_str, 300)
+                    result_text = escape(truncate(content_str, 300))
                     if block.is_error:
                         console.print(f"[red]❌ {result_text}[/red]")
                     else:
                         console.print(f"[green]✅ {result_text}[/green]")
 
     elif isinstance(message, SystemMessage):
-        console.print(f"[yellow]⚙️ [{message.subtype}] {str(message.data)}[/yellow]")
+        console.print(f"[yellow]⚙️ [{message.subtype}] {escape(str(message.data))}[/yellow]")
 
     elif isinstance(message, ResultMessage):
         if message.result:
