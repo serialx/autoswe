@@ -55,9 +55,7 @@ def print_message(
 
             elif isinstance(block, ThinkingBlock):
                 thinking_preview = truncate(block.thinking, 300)
-                console.print(
-                    f"[dim italic]💭 {escape(thinking_preview)}[/dim italic]"
-                )
+                console.print(f"[dim italic]💭 {escape(thinking_preview)}[/dim italic]")
 
             elif isinstance(block, ToolUseBlock):
                 console.print(f"[bold cyan]🔧 {block.name}[/bold cyan]", end="")
@@ -81,7 +79,9 @@ def print_message(
                         console.print(f"[green]✅ {result_text}[/green]")
 
     elif isinstance(message, SystemMessage):
-        console.print(f"[yellow]⚙️ [{message.subtype}] {escape(str(message.data))}[/yellow]")
+        console.print(
+            f"[yellow]⚙️ [{message.subtype}] {escape(str(message.data))}[/yellow]"
+        )
 
     elif isinstance(message, ResultMessage):
         if message.result:

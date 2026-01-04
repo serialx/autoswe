@@ -34,6 +34,13 @@ REVIEW_PROMPT = (
     "changes. Score each branch from 1-10."
 )
 
+CHERRY_PICK_PROMPT = (
+    "Cherry-pick the changes from branch '{branch}' to current branch using "
+    "squash merge. Run: git merge --squash {branch} && git commit -m '{message}'. "
+    "If there are conflicts, resolve them. Output 'CHERRY_PICK_SUCCESS' when done "
+    "or 'CHERRY_PICK_FAILED' if unable to complete."
+)
+
 
 class BranchReview(BaseModel):
     """Review result for a single refactor branch."""
@@ -78,6 +85,22 @@ async def run_claude_code(prompt: str) -> str:
 
     console.print()
     return "".join(output)
+
+
+async def run_cherry_pick_agent(branch: str, commit_message: str) -> bool:
+    """Run Claude Code to cherry-pick a branch. Returns True on success."""
+    output: list[str] = []
+    prompt = CHERRY_PICK_PROMPT.format(branch=branch, message=commit_message)
+
+    async with ClaudeSDKClient(
+        options=options.claude_code_like_cherry_pick()
+    ) as client:
+        await client.query(prompt=prompt)
+        async for message in client.receive_response():
+            print_message(message, output=output)
+
+    console.print()
+    return "CHERRY_PICK_SUCCESS" in "".join(output)
 
 
 async def review_refactor_branches() -> RefactorReviewResult | None:
@@ -173,6 +196,49 @@ async def drop_low_scoring_branches(result: RefactorReviewResult) -> None:
     console.print("[green]Done.[/green]")
 
 
+async def interactive_cherry_pick_review(
+    result: RefactorReviewResult,
+    trunk_branch: str,
+) -> None:
+    """Interactive review with Y/n/d prompt for each branch."""
+    sorted_branches = sorted(result.branches, key=lambda b: b.score, reverse=True)
+
+    for branch in sorted_branches:
+        console.print()
+        console.print(Rule(f"[bold cyan]{branch.branch_name}[/bold cyan]"))
+        console.print(
+            f"Score: {branch.score}/10  |  Recommendation: {branch.recommendation}"
+        )
+        console.print(f"Summary: {branch.summary}")
+
+        commit_msg = await git.get_branch_commits(branch.branch_name, trunk_branch)
+        console.print(f"\n[dim]Commits:[/dim]\n{commit_msg}")
+        console.print()
+
+        choice = typer.prompt(
+            "Cherry-pick? [Y]es / [n]o / [d]elete",
+            default="n",
+            show_default=False,
+        ).lower()
+
+        if choice == "y":
+            success = await run_cherry_pick_agent(branch.branch_name, branch.summary)
+            if success:
+                await git.delete_branch(branch.branch_name, force=True)
+                console.print(
+                    f"[green]✓ Cherry-picked and deleted {branch.branch_name}[/green]"
+                )
+            else:
+                console.print(
+                    f"[red]✗ Cherry-pick failed for {branch.branch_name}[/red]"
+                )
+        elif choice == "d":
+            await git.delete_branch(branch.branch_name, force=True)
+            console.print(f"[yellow]Deleted {branch.branch_name}[/yellow]")
+        else:
+            console.print(f"[dim]Skipped {branch.branch_name}[/dim]")
+
+
 @app.callback(invoke_without_command=True)
 @sync_command
 async def autorefactor(
@@ -220,6 +286,6 @@ async def autorefactor(
     review_result = await review_refactor_branches()
     if review_result:
         display_review_results(review_result)
-        await drop_low_scoring_branches(review_result)
+        await interactive_cherry_pick_review(review_result, trunk_branch)
         console.print()
         console.print("[bold green]Done![/bold green]")

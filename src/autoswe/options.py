@@ -106,3 +106,22 @@ def claude_code_like_refactor() -> ClaudeAgentOptions:
             ],
         ),
     )
+
+
+def claude_code_like_cherry_pick() -> ClaudeAgentOptions:
+    """claude_code_like() with permissions for cherry-pick workflow."""
+    return dataclasses.replace(
+        claude_code_like(),
+        can_use_tool=create_permission_handler(
+            allow_bash_prefixes=[
+                "git branch",
+                "git diff",
+                "git log",
+                "git show",
+                "git checkout",
+                "git merge",
+                "git commit",
+                "git reset",
+            ],
+        ),
+    )

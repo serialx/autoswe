@@ -58,3 +58,19 @@ async def delete_branch(branch: str, force: bool = False) -> None:
     """
     flag = "-D" if force else "-d"
     await run_git_command("branch", flag, branch)
+
+
+async def get_branch_commits(branch: str, base: str = "main") -> str:
+    """Get formatted commit messages for a branch relative to base.
+
+    Args:
+        branch: Name of the branch to get commits from.
+        base: Base branch to compare against.
+
+    Returns:
+        Formatted string of commit messages.
+    """
+    output = await run_git_command(
+        "log", f"{base}..{branch}", "--pretty=format:%s%n%b", "--reverse"
+    )
+    return output.strip()
