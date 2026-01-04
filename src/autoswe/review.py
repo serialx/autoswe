@@ -2,12 +2,41 @@
 
 import asyncio
 import json
+from typing import TypedDict
 
 import typer
 
 from autoswe import sync_command
 
 app = typer.Typer()
+
+
+class Commit(TypedDict):
+    """Commit information from GitHub API."""
+
+    committedDate: str
+
+
+class Comment(TypedDict):
+    """Comment information from GitHub API."""
+
+    body: str
+    createdAt: str
+
+
+class PRInfo(TypedDict):
+    """PR summary from GitHub API list command."""
+
+    number: int
+    url: str
+    title: str
+
+
+class PRDetails(TypedDict):
+    """PR details including comments and commits."""
+
+    comments: list[Comment]
+    commits: list[Commit]
 
 
 async def run_gh_command(*args: str) -> str:
@@ -24,7 +53,7 @@ async def run_gh_command(*args: str) -> str:
     return stdout.decode()
 
 
-async def get_review_requested_prs(repo: str | None = None) -> list[dict]:
+async def get_review_requested_prs(repo: str | None = None) -> list[PRInfo]:
     """Get PRs where the current user is requested as a reviewer."""
     args = [
         "pr",
@@ -40,13 +69,14 @@ async def get_review_requested_prs(repo: str | None = None) -> list[dict]:
     return json.loads(output) if output.strip() else []
 
 
-async def get_pr_details(pr_number: int, repo: str | None = None) -> dict:
+async def get_pr_details(pr_number: int, repo: str | None = None) -> PRDetails:
     """Get PR details including comments and commits."""
     args = ["pr", "view", str(pr_number), "--json", "comments,commits"]
     if repo:
         args.extend(["--repo", repo])
     output = await run_gh_command(*args)
-    return json.loads(output) if output.strip() else {}
+    data = json.loads(output) if output.strip() else {}
+    return PRDetails(comments=data.get("comments", []), commits=data.get("commits", []))
 
 
 async def add_pr_comment(pr_number: int, body: str, repo: str | None = None) -> None:
@@ -57,28 +87,23 @@ async def add_pr_comment(pr_number: int, body: str, repo: str | None = None) -> 
     await run_gh_command(*args)
 
 
-def get_last_codex_review_time(comments: list[dict]) -> str | None:
+def get_last_codex_review_time(comments: list[Comment]) -> str | None:
     """Get the timestamp of the last '@codex review' comment."""
     timestamps: list[str] = [
-        created_at
+        c["createdAt"]
         for c in comments
-        if "@codex review" in c.get("body", "")
-        and (created_at := c.get("createdAt")) is not None
+        if "@codex review" in c["body"]
     ]
     return max(timestamps, default=None)
 
 
-def get_latest_commit_time(commits: list[dict]) -> str | None:
+def get_latest_commit_time(commits: list[Commit]) -> str | None:
     """Get the timestamp of the latest commit."""
-    timestamps: list[str] = [
-        committed_date
-        for c in commits
-        if (committed_date := c.get("committedDate")) is not None
-    ]
+    timestamps: list[str] = [c["committedDate"] for c in commits]
     return max(timestamps, default=None)
 
 
-def needs_review(comments: list[dict], commits: list[dict]) -> tuple[bool, str]:
+def needs_review(comments: list[Comment], commits: list[Commit]) -> tuple[bool, str]:
     """Check if PR needs a new '@codex review' comment.
 
     Returns (needs_review, reason).
@@ -134,8 +159,8 @@ async def review(
         print(f"  URL: {pr_url}")
 
         details = await get_pr_details(pr_number, repo)
-        comments = details.get("comments", [])
-        commits = details.get("commits", [])
+        comments = details["comments"]
+        commits = details["commits"]
 
         should_review, reason = needs_review(comments, commits)
         if not should_review:
