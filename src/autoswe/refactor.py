@@ -35,8 +35,7 @@ REVIEW_PROMPT = (
 )
 
 CHERRY_PICK_PROMPT = (
-    "Cherry-pick the changes from branch '{branch}' to current branch using "
-    "squash merge. Run: git merge --squash {branch} && git commit -m '{message}'. "
+    "Cherry-pick the changes from branch '{branch}' to current branch."
     "If there are conflicts, resolve them. Output 'CHERRY_PICK_SUCCESS' when done "
     "or 'CHERRY_PICK_FAILED' if unable to complete."
 )
