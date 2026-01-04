@@ -23,6 +23,9 @@ GIT_READ_COMMANDS: tuple[str, ...] = (
 GIT_WRITE_COMMANDS: tuple[str, ...] = (
     "git add",
     "git commit",
+    "git reset",
+    "git merge",
+    "git cherry-pick",
 )
 
 # Type alias for permission handler functions
@@ -110,16 +113,6 @@ def claude_code_like_cherry_pick() -> ClaudeAgentOptions:
     return dataclasses.replace(
         claude_code_like(),
         can_use_tool=create_permission_handler(
-            allow_bash_prefixes=[
-                "git branch",
-                "git diff",
-                "git log",
-                "git show",
-                "git checkout",
-                "git merge",
-                "git commit",
-                "git reset",
-                "git cherry-pick",
-            ],
+            allow_bash_prefixes=[*GIT_READ_COMMANDS, *GIT_WRITE_COMMANDS],
         ),
     )
