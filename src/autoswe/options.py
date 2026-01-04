@@ -12,6 +12,19 @@ from claude_agent_sdk import (
 )
 from claude_agent_sdk.types import ClaudeAgentOptions
 
+# Git command prefix constants for permission handlers
+GIT_READ_COMMANDS: tuple[str, ...] = (
+    "git branch",
+    "git diff",
+    "git log",
+    "git show",
+    "git checkout",
+)
+GIT_WRITE_COMMANDS: tuple[str, ...] = (
+    "git add",
+    "git commit",
+)
+
 # Type alias for permission handler functions
 PermissionHandler = Callable[
     [str, dict[str, Any], ToolPermissionContext], Awaitable[PermissionResult]
@@ -78,15 +91,7 @@ def claude_code_like_git_review() -> ClaudeAgentOptions:
     """claude_code_like() with git read commands permission for branch review."""
     return dataclasses.replace(
         claude_code_like(),
-        can_use_tool=create_permission_handler(
-            allow_bash_prefixes=[
-                "git branch",
-                "git diff",
-                "git log",
-                "git show",
-                "git checkout",
-            ],
-        ),
+        can_use_tool=create_permission_handler(allow_bash_prefixes=GIT_READ_COMMANDS),
     )
 
 
@@ -95,15 +100,7 @@ def claude_code_like_refactor() -> ClaudeAgentOptions:
     return dataclasses.replace(
         claude_code_like(),
         can_use_tool=create_permission_handler(
-            allow_bash_prefixes=[
-                "git branch",
-                "git diff",
-                "git log",
-                "git show",
-                "git add",
-                "git commit",
-                "git checkout",
-            ],
+            allow_bash_prefixes=[*GIT_READ_COMMANDS, *GIT_WRITE_COMMANDS],
         ),
     )
 
