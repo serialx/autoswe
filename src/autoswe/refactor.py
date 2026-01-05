@@ -19,13 +19,29 @@ app = typer.Typer()
 # Marker text that signals no more refactoring is needed
 NO_REFACTORING_MARKER = "<promise>NO REFACTORING NEEDED</promise>"
 
-REFACTOR_PROMPT = (
-    "Analyze the project code to find a precise/targeted/elegant refactoring "
-    "objective. You must analyze existing local branches and pick an objective "
-    "that is not a duplicate. Perform the refactor. Create a branch called "
-    "`refactor/<branchname>` with a commit. When you cannot find "
-    f"any refactoring objectives, output '{NO_REFACTORING_MARKER}'"
-)
+REFACTOR_PROMPT = f"""\
+Analyze the project code to find a precise/targeted/elegant refactoring \
+objective. You must analyze existing local branches and pick an objective \
+that is not a duplicate.
+
+PREFERRED refactoring types (prioritize these):
+- Consolidate duplicate/similar functions into a single, more flexible function
+- Improve type safety (e.g., replace tuple returns with NamedTuple, add \
+Literals, use stricter types)
+- Improve naming clarity (rename ambiguous parameters, avoid shadowing)
+- Use existing constants/patterns more consistently
+- Simplify complex conditionals or reduce nesting
+- Remove dead code or unused imports
+
+AVOID these refactoring types:
+- Do NOT extract small utilities into separate files
+- Do NOT create helpers for patterns only used in one location
+- Do NOT over-modularize or split existing modules
+
+Perform the refactor. Create a branch called `refactor/<branchname>` with a \
+commit. When you cannot find any refactoring objectives, output \
+'{NO_REFACTORING_MARKER}'
+"""
 
 REVIEW_PROMPT = (
     "Review all the 'refactor/*' branches in this repository. For each branch, "
