@@ -3,12 +3,13 @@
 import typer
 from pydantic import BaseModel, Field
 
-from autoswe import codex_review, permission, refactor, sync_command
+from autoswe import codex_review, docs, permission, refactor, sync_command
 from autoswe.structured import structured_query
 
 app = typer.Typer()
 app.add_typer(permission.app, name="permission")
 app.add_typer(refactor.app, name="refactor")
+app.add_typer(docs.app, name="docs")
 app.add_typer(codex_review.app, name="codex-review")
 
 
