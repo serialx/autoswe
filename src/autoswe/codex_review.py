@@ -1,4 +1,4 @@
-"""Review command for requesting codex reviews on PRs."""
+"""Codex auto-review command for requesting codex reviews on PRs."""
 
 import json
 from collections.abc import Callable, Mapping, Sequence

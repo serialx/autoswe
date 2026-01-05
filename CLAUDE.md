@@ -23,6 +23,6 @@ uv run pytest            # Test
 
 - `main.py` - Typer CLI entry point. Uses `asyncer.syncify` to bridge async to sync.
 
-- `review.py` - PR review automation. Finds PRs requesting user's review via `gh` CLI, adds `@codex review` comments, tracks commits to re-request after new pushes.
+- `codex_review.py` - Codex auto-review automation. Finds PRs requesting user's review via `gh` CLI, adds `@codex review` comments, tracks commits to re-request after new pushes.
 
 All core functions are async-first.
