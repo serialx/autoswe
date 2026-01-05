@@ -28,6 +28,10 @@ AVOID these refactoring types:
 - Do NOT create helpers for patterns only used in one location
 - Do NOT over-modularize or split existing modules
 
+IMPORTANT: The trunk branch is '{{trunk_branch}}'. Always create your branches from \
+and compare against this trunk branch. Do NOT switch to or use 'main' or 'master' \
+unless '{{trunk_branch}}' is one of those.
+
 Perform the refactor. Create a branch called `refactor/<branchname>` with a \
 commit. When you cannot find any refactoring objectives, output \
 '{NO_REFACTORING_MARKER}'

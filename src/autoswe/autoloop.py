@@ -321,7 +321,8 @@ async def run_loop(
         )
         console.print()
 
-        output = await run_task(config.task_prompt)
+        task_prompt = config.task_prompt.format(trunk_branch=trunk_branch)
+        output = await run_task(task_prompt)
 
         if config.no_more_marker in output:
             console.print()

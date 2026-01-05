@@ -41,6 +41,10 @@ VERIFICATION PROCESS:
 3. Cross-check any examples or values against actual code usage
 4. If uncertain about a detail, omit it rather than guess
 
+IMPORTANT: The trunk branch is '{{trunk_branch}}'. Always create your branches from \
+and compare against this trunk branch. Do NOT switch to or use 'main' or 'master' \
+unless '{{trunk_branch}}' is one of those.
+
 Perform the documentation task. Create a branch called `docs/<branchname>` with a \
 commit. When you cannot find any documentation objectives, output \
 '{NO_DOCUMENTATION_MARKER}'
