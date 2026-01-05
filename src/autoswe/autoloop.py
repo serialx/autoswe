@@ -101,15 +101,18 @@ async def run_cherry_pick_agent(branch: str, commit_message: str) -> bool:
 
 async def run_prompt_optimization_agent(
     config: WorkflowConfig,
-    decisions: list[tuple[BranchReview, str]],
+    decisions: list[tuple[BranchReview, str, str | None]],
 ) -> None:
     """Analyze user feedback and suggest prompt improvements."""
     feedback_lines = []
-    for branch, choice in decisions:
+    for branch, choice, user_feedback in decisions:
         action = {"y": "ACCEPTED", "d": "DELETED", "n": "SKIPPED"}.get(
             choice, "SKIPPED"
         )
-        feedback_lines.append(f"- [{action}] {branch.branch_name}: {branch.summary}")
+        line = f"- [{action}] {branch.branch_name}: {branch.summary}"
+        if user_feedback:
+            line += f"\n  User feedback: {user_feedback}"
+        feedback_lines.append(line)
 
     feedback = "\n".join(feedback_lines)
     prompt = config.optimization_prompt.format(
@@ -236,7 +239,7 @@ async def interactive_cherry_pick_review(
     sorted_branches = sorted(result.branches, key=lambda b: b.score, reverse=True)
 
     # Phase 1: Collect all decisions
-    decisions: list[tuple[BranchReview, str]] = []
+    decisions: list[tuple[BranchReview, str, str | None]] = []
 
     for branch in sorted_branches:
         console.print()
@@ -255,12 +258,17 @@ async def interactive_cherry_pick_review(
         console.print()
 
         choice = typer.prompt(
-            "Cherry-pick? [Y]es / [n]o / [d]elete",
+            "Cherry-pick? [Y]es / [n]o / [d]elete / [nf] no+feedback / [df] delete+feedback",
             default="y",
             show_default=False,
         ).lower()
 
-        decisions.append((branch, choice))
+        user_feedback: str | None = None
+        if choice in ("nf", "df"):
+            user_feedback = typer.prompt("Feedback")
+            choice = choice[0]  # Normalize: 'nf' -> 'n', 'df' -> 'd'
+
+        decisions.append((branch, choice, user_feedback))
 
     # Phase 2: Prompt optimization analysis
     if decisions:
@@ -270,7 +278,7 @@ async def interactive_cherry_pick_review(
     console.print()
     console.print(Rule("[bold blue]Executing Actions[/bold blue]"))
 
-    for branch, choice in decisions:
+    for branch, choice, _ in decisions:
         if choice == "y":
             console.print(f"\n[cyan]Cherry-picking {branch.branch_name}...[/cyan]")
             success = await run_cherry_pick_agent(branch.branch_name, branch.summary)
