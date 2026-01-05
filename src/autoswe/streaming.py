@@ -100,10 +100,27 @@ _BLOCK_HANDLERS: dict[type, Any] = {
 
 def _handle_assistant_message(message: AssistantMessage, ctx: PrintContext) -> None:
     """Handle AssistantMessage by dispatching to block handlers."""
+    needs_newline = False
+
     for block in message.content:
+        # Add newline before non-text block if previous text didn't end with one
+        if needs_newline and not isinstance(block, TextBlock):
+            console.print()
+            needs_newline = False
+
         handler = _BLOCK_HANDLERS.get(type(block))
         if handler:
             handler(block, ctx)
+
+        # Track if we need a newline (text block printed without trailing newline)
+        if isinstance(block, TextBlock):
+            needs_newline = ctx.text_end == "" and not block.text.endswith("\n")
+        else:
+            needs_newline = False
+
+    # Add trailing newline if message ends with text that has no newline
+    if needs_newline:
+        console.print()
 
 
 def _handle_system_message(message: SystemMessage, ctx: PrintContext) -> None:
