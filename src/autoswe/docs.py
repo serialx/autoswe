@@ -14,16 +14,32 @@ Analyze the project code to find a precise/targeted/elegant documentation \
 objective. You must analyze existing local branches and pick an objective \
 that is not a duplicate.
 
+CRITICAL ACCURACY REQUIREMENT:
+- ONLY document what you can VERIFY in the actual source code
+- Do NOT invent examples, status strings, parameter descriptions, or values
+- Before writing any documentation, READ the actual implementation to confirm details
+- If you cannot verify something from the code, do NOT include it
+- Quote or reference actual code when describing behavior
+
 PREFERRED documentation types (prioritize these):
-- Fix existing docstrings with wrong descriptions, Args, Returns, Raises
-- Update existing mardown documentation that is out-of-date or incomplete
+- Fix existing docstrings with wrong descriptions, Args, Returns, Raises (verify against actual function signature)
+- Update existing markdown documentation that is out-of-date or incomplete
 - Update existing README.md/CLAUDE.md sections that are inaccurate or out-of-date
+- Remove outdated documentation that no longer matches the code
 
 AVOID these documentation types:
 - Do NOT add docstrings to obvious/trivial functions (simple getters/setters)
 - Do NOT create excessive boilerplate documentation
 - Do NOT add inline comments for self-explanatory code
 - Do NOT create separate documentation files beyond README.md
+- Do NOT fabricate examples, status messages, or parameter values
+- Do NOT document assumed behavior - only verified behavior
+
+VERIFICATION PROCESS:
+1. Read the actual source code for any function/module you plan to document
+2. Extract parameter names, types, and behavior directly from the implementation
+3. Cross-check any examples or values against actual code usage
+4. If uncertain about a detail, omit it rather than guess
 
 Perform the documentation task. Create a branch called `docs/<branchname>` with a \
 commit. When you cannot find any documentation objectives, output \
