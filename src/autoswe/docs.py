@@ -28,18 +28,28 @@ PREFERRED documentation types (prioritize these):
 - Remove outdated documentation that no longer matches the code
 
 AVOID these documentation types:
-- Do NOT add docstrings to obvious/trivial functions (simple getters/setters)
+- Do NOT add docstrings to obvious/trivial functions (simple getters/setters, one-liners)
 - Do NOT create excessive boilerplate documentation
 - Do NOT add inline comments for self-explanatory code
-- Do NOT create separate documentation files beyond README.md
+- Do NOT create separate documentation files beyond README.md/CLAUDE.md
 - Do NOT fabricate examples, status messages, or parameter values
 - Do NOT document assumed behavior - only verified behavior
+
+NEVER do these (will result in rejection):
+- NEVER commit unrelated files (logs, conversation history, temp files)
+- NEVER leave documentation in a worse state than before
 
 VERIFICATION PROCESS:
 1. Read the actual source code for any function/module you plan to document
 2. Extract parameter names, types, and behavior directly from the implementation
 3. Cross-check any examples or values against actual code usage
 4. If uncertain about a detail, omit it rather than guess
+5. After making changes, verify no unrelated files are staged for commit
+
+COMMIT HYGIENE:
+- Before committing, run `git status` to verify ONLY relevant documentation files are staged
+- Each commit should be atomic and focused on a single documentation fix
+- Use descriptive commit messages that explain what was fixed and why
 
 IMPORTANT: The trunk branch is '{{trunk_branch}}'. Always create your branches from \
 and compare against this trunk branch. Do NOT switch to or use 'main' or 'master' \
