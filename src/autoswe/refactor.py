@@ -204,6 +204,9 @@ async def interactive_cherry_pick_review(
     """Interactive review with Y/n/d prompt for each branch."""
     sorted_branches = sorted(result.branches, key=lambda b: b.score, reverse=True)
 
+    # Phase 1: Collect all decisions
+    decisions: list[tuple[BranchReview, str]] = []
+
     for branch in sorted_branches:
         console.print()
         console.print(Rule(f"[bold cyan]{branch.branch_name}[/bold cyan]"))
@@ -222,7 +225,15 @@ async def interactive_cherry_pick_review(
             show_default=False,
         ).lower()
 
+        decisions.append((branch, choice))
+
+    # Phase 2: Execute all decisions
+    console.print()
+    console.print(Rule("[bold blue]Executing Actions[/bold blue]"))
+
+    for branch, choice in decisions:
         if choice == "y":
+            console.print(f"\n[cyan]Cherry-picking {branch.branch_name}...[/cyan]")
             success = await run_cherry_pick_agent(branch.branch_name, branch.summary)
             if success:
                 await git.delete_branch(branch.branch_name, force=True)
