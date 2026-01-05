@@ -18,7 +18,8 @@ from autoswe.structured import structured_query_stream
 CHERRY_PICK_PROMPT = """\
 Cherry-pick the changes from branch '{branch}' to current branch. \
 If there are conflicts, resolve them. Output 'CHERRY_PICK_SUCCESS' when done \
-or 'CHERRY_PICK_FAILED' if unable to complete.
+or 'CHERRY_PICK_FAILED' if unable to complete.\
+{feedback_section}
 """
 
 
@@ -92,9 +93,12 @@ async def run_task(prompt: str) -> str:
     return await run_streaming_query(prompt, options.claude_code_like_refactor())
 
 
-async def run_cherry_pick_agent(branch: str, commit_message: str) -> bool:
+async def run_cherry_pick_agent(
+    branch: str, commit_message: str, feedback: str | None = None
+) -> bool:
     """Run Claude Code to cherry-pick a branch. Returns True on success."""
-    prompt = CHERRY_PICK_PROMPT.format(branch=branch, message=commit_message)
+    feedback_section = f"\n\nUser feedback: {feedback}" if feedback else ""
+    prompt = CHERRY_PICK_PROMPT.format(branch=branch, feedback_section=feedback_section)
     output = await run_streaming_query(prompt, options.claude_code_like_cherry_pick())
     return "CHERRY_PICK_SUCCESS" in output
 
@@ -258,15 +262,15 @@ async def interactive_cherry_pick_review(
         console.print()
 
         choice = typer.prompt(
-            "Cherry-pick? [Y]es / [n]o / [d]elete / [nf] no+feedback / [df] delete+feedback",
+            "Cherry-pick? [Y]es / [n]o / [d]elete / [yf] yes+feedback / [nf] no+feedback / [df] delete+feedback",
             default="y",
             show_default=False,
         ).lower()
 
         user_feedback: str | None = None
-        if choice in ("nf", "df"):
+        if choice in ("yf", "nf", "df"):
             user_feedback = typer.prompt("Feedback")
-            choice = choice[0]  # Normalize: 'nf' -> 'n', 'df' -> 'd'
+            choice = choice[0]  # Normalize: 'yf' -> 'y', 'nf' -> 'n', 'df' -> 'd'
 
         decisions.append((branch, choice, user_feedback))
 
@@ -278,10 +282,12 @@ async def interactive_cherry_pick_review(
     console.print()
     console.print(Rule("[bold blue]Executing Actions[/bold blue]"))
 
-    for branch, choice, _ in decisions:
+    for branch, choice, user_feedback in decisions:
         if choice == "y":
             console.print(f"\n[cyan]Cherry-picking {branch.branch_name}...[/cyan]")
-            success = await run_cherry_pick_agent(branch.branch_name, branch.summary)
+            success = await run_cherry_pick_agent(
+                branch.branch_name, branch.summary, user_feedback
+            )
             if success:
                 await git.delete_branch(branch.branch_name, force=True)
                 console.print(
