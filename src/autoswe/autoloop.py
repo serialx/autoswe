@@ -138,7 +138,7 @@ async def run_prompt_optimization_agent(
     console.print()
 
 
-async def review_branches(config: WorkflowConfig) -> ReviewResult | None:
+async def review_branches(config: WorkflowConfig, trunk_branch: str) -> ReviewResult | None:
     """Review all branches and return structured results."""
     branch_pattern = f"{config.branch_prefix}/*"
     branches = await git.list_branches(branch_pattern)
@@ -153,8 +153,9 @@ async def review_branches(config: WorkflowConfig) -> ReviewResult | None:
     console.print()
 
     result: ReviewResult | None = None
+    review_prompt = config.review_prompt.format(trunk_branch=trunk_branch)
     async for message, structured_result in structured_query_stream(
-        prompt=config.review_prompt,
+        prompt=review_prompt,
         schema=ReviewResult,
         agent_options=options.claude_code_like_git_review(),
     ):
@@ -346,7 +347,7 @@ async def run_loop(
             )
 
     # Review all branches
-    review_result = await review_branches(config)
+    review_result = await review_branches(config, trunk_branch)
     if review_result:
         display_review_results(config, review_result)
         await interactive_cherry_pick_review(config, review_result, trunk_branch)

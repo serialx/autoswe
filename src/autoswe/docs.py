@@ -58,8 +58,8 @@ analyze the changes made and evaluate:
 3. Whether it introduces errors or inaccurate information
 4. Overall value of the documentation
 
-Use `git branch` to list branches and `git show` to see \
-changes. Score each branch from 1-10.
+The trunk branch is '{trunk_branch}'. Use `git branch` to list branches and \
+`git diff {trunk_branch}...<branch>` to see changes. Score each branch from 1-10.
 """
 
 PROMPT_OPTIMIZATION_PROMPT = """\
