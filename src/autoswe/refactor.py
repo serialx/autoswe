@@ -43,25 +43,27 @@ commit. When you cannot find any refactoring objectives, output \
 '{NO_REFACTORING_MARKER}'
 """
 
-REVIEW_PROMPT = (
-    "Review all the 'refactor/*' branches in this repository. For each branch, "
-    "analyze the changes made and evaluate:\n"
-    "1. Quality and elegance of the refactoring\n"
-    "2. Whether it duplicates another branch's work\n"
-    "3. Whether it introduces errors or breaks functionality\n"
-    "4. Overall value of the refactoring\n\n"
-    "Use `git branch` to list branches and `git diff main...<branch>` to see "
-    "changes. Score each branch from 1-10."
-)
+REVIEW_PROMPT = """\
+Review all the 'refactor/*' branches in this repository. For each branch, \
+analyze the changes made and evaluate:
+1. Quality and elegance of the refactoring
+2. Whether it duplicates another branch's work
+3. Whether it introduces errors or breaks functionality
+4. Overall value of the refactoring
 
-CHERRY_PICK_PROMPT = (
-    "Cherry-pick the changes from branch '{branch}' to current branch."
-    "If there are conflicts, resolve them. Output 'CHERRY_PICK_SUCCESS' when done "
-    "or 'CHERRY_PICK_FAILED' if unable to complete."
-)
+Use `git branch` to list branches and `git diff main...<branch>` to see \
+changes. Score each branch from 1-10.
+"""
+
+CHERRY_PICK_PROMPT = """\
+Cherry-pick the changes from branch '{branch}' to current branch. \
+If there are conflicts, resolve them. Output 'CHERRY_PICK_SUCCESS' when done \
+or 'CHERRY_PICK_FAILED' if unable to complete.
+"""
 
 PROMPT_OPTIMIZATION_PROMPT = """\
-Analyze the user's feedback on refactoring branches and suggest improvements to the refactoring prompt.
+Analyze the user's feedback on refactoring branches and suggest improvements \
+to the refactoring prompt.
 
 Current refactoring prompt:
 ```
