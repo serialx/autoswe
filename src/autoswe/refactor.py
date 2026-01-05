@@ -42,6 +42,30 @@ CHERRY_PICK_PROMPT = (
     "or 'CHERRY_PICK_FAILED' if unable to complete."
 )
 
+PROMPT_OPTIMIZATION_PROMPT = """\
+Analyze the user's feedback on refactoring branches and suggest improvements to the refactoring prompt.
+
+Current refactoring prompt:
+```
+{current_prompt}
+```
+
+User feedback on branches:
+{feedback}
+
+Based on this feedback, identify patterns:
+- What types of refactorings did the user accept (cherry-pick)?
+- What types did the user reject (skip or delete)?
+- Are there any clear preferences or anti-patterns?
+
+Suggest an improved version of the refactoring prompt that:
+1. Encourages the types of refactorings the user accepts
+2. Discourages or excludes the types the user rejects
+3. Maintains the core functionality
+
+Output your analysis and the improved prompt clearly.
+"""
+
 
 class BranchReview(BaseModel):
     """Review result for a single refactor branch."""
@@ -102,6 +126,36 @@ async def run_cherry_pick_agent(branch: str, commit_message: str) -> bool:
 
     console.print()
     return "CHERRY_PICK_SUCCESS" in "".join(output)
+
+
+async def run_prompt_optimization_agent(
+    decisions: list[tuple["BranchReview", str]],
+) -> None:
+    """Analyze user feedback and suggest prompt improvements."""
+    # Build feedback summary
+    feedback_lines = []
+    for branch, choice in decisions:
+        action = {"y": "ACCEPTED", "d": "DELETED", "n": "SKIPPED"}.get(choice, "SKIPPED")
+        feedback_lines.append(f"- [{action}] {branch.branch_name}: {branch.summary}")
+
+    feedback = "\n".join(feedback_lines)
+    prompt = PROMPT_OPTIMIZATION_PROMPT.format(
+        current_prompt=REFACTOR_PROMPT,
+        feedback=feedback,
+    )
+
+    console.print()
+    console.print(Rule("[bold magenta]Prompt Optimization Analysis[/bold magenta]"))
+    console.print()
+
+    async with ClaudeSDKClient(
+        options=options.claude_code_like_git_review()
+    ) as client:
+        await client.query(prompt=prompt)
+        async for message in client.receive_response():
+            print_message(message)
+
+    console.print()
 
 
 async def review_refactor_branches() -> RefactorReviewResult | None:
@@ -227,7 +281,11 @@ async def interactive_cherry_pick_review(
 
         decisions.append((branch, choice))
 
-    # Phase 2: Execute all decisions
+    # Phase 2: Prompt optimization analysis
+    if decisions:
+        await run_prompt_optimization_agent(decisions)
+
+    # Phase 3: Execute all decisions
     console.print()
     console.print(Rule("[bold blue]Executing Actions[/bold blue]"))
 
