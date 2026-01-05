@@ -254,12 +254,22 @@ async def interactive_cherry_pick_review(
         )
         console.print(f"Summary: {branch.summary}")
 
-        commit_msg = await git.get_branch_commits(branch.branch_name, trunk_branch)
-        console.print(f"\n[dim]Commits:[/dim]\n{commit_msg}")
+        try:
+            commit_msg = await git.get_branch_commits(branch.branch_name, trunk_branch)
+            console.print(f"\n[dim]Commits:[/dim]\n{commit_msg}")
+        except git.GitCommandError:
+            console.print(
+                f"\n[yellow]Could not get commits (branch may not share history with {trunk_branch})[/yellow]"
+            )
 
-        diff = await git.get_branch_diff(branch.branch_name, trunk_branch)
-        console.print("\n[dim]Diff:[/dim]")
-        console.print(diff, markup=False)
+        try:
+            diff = await git.get_branch_diff(branch.branch_name, trunk_branch)
+            console.print("\n[dim]Diff:[/dim]")
+            console.print(diff, markup=False)
+        except git.GitCommandError:
+            console.print(
+                f"\n[yellow]Could not get diff (branch may not share history with {trunk_branch})[/yellow]"
+            )
         console.print()
 
         choice = typer.prompt(

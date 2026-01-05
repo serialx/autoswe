@@ -3,6 +3,12 @@
 from autoswe.cli import run_command
 
 
+class GitCommandError(Exception):
+    """Error from a git command."""
+
+    pass
+
+
 async def run_git_command(*args: str) -> str:
     """Run a git CLI command and return stdout."""
     return await run_command("git", *args)
@@ -55,11 +61,19 @@ async def get_branch_commits(branch: str, base: str = "main") -> str:
 
     Returns:
         Formatted string of commit messages.
+
+    Raises:
+        GitCommandError: If the git command fails (e.g., branches don't share history).
     """
-    output = await run_git_command(
-        "log", f"{base}..{branch}", "--pretty=format:%s%n%b", "--reverse"
-    )
-    return output.strip()
+    try:
+        output = await run_git_command(
+            "log", f"{base}..{branch}", "--pretty=format:%s%n%b", "--reverse"
+        )
+        return output.strip()
+    except RuntimeError as e:
+        raise GitCommandError(
+            f"Failed to get commits for {branch} relative to {base}: {e}"
+        ) from e
 
 
 async def get_branch_diff(branch: str, base: str = "main") -> str:
@@ -71,6 +85,14 @@ async def get_branch_diff(branch: str, base: str = "main") -> str:
 
     Returns:
         Unified diff output.
+
+    Raises:
+        GitCommandError: If the git command fails (e.g., branches don't share history).
     """
-    output = await run_git_command("diff", f"{base}...{branch}")
-    return output.strip()
+    try:
+        output = await run_git_command("diff", f"{base}...{branch}")
+        return output.strip()
+    except RuntimeError as e:
+        raise GitCommandError(
+            f"Failed to get diff for {branch} relative to {base}: {e}"
+        ) from e
