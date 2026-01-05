@@ -60,3 +60,17 @@ async def get_branch_commits(branch: str, base: str = "main") -> str:
         "log", f"{base}..{branch}", "--pretty=format:%s%n%b", "--reverse"
     )
     return output.strip()
+
+
+async def get_branch_diff(branch: str, base: str = "main") -> str:
+    """Get unified diff for a branch relative to base.
+
+    Args:
+        branch: Name of the branch to get diff from.
+        base: Base branch to compare against.
+
+    Returns:
+        Unified diff output.
+    """
+    output = await run_git_command("diff", f"{base}...{branch}")
+    return output.strip()

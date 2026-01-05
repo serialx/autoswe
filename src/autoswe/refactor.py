@@ -271,6 +271,9 @@ async def interactive_cherry_pick_review(
 
         commit_msg = await git.get_branch_commits(branch.branch_name, trunk_branch)
         console.print(f"\n[dim]Commits:[/dim]\n{commit_msg}")
+
+        diff = await git.get_branch_diff(branch.branch_name, trunk_branch)
+        console.print(f"\n[dim]Diff:[/dim]\n{diff}")
         console.print()
 
         choice = typer.prompt(
