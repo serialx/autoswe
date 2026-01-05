@@ -54,7 +54,7 @@ analyze the changes made and evaluate:
 3. Whether it introduces errors or inaccurate information
 4. Overall value of the documentation
 
-Use `git branch` to list branches and `git diff main...<branch>` to see \
+Use `git branch` to list branches and `git show` to see \
 changes. Score each branch from 1-10.
 """
 
